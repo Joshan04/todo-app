@@ -334,7 +334,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         {task.dueDate ? (
                             <div className="relative">
                                 <button
-                                    onClick={() => setShowDatePicker(!showDatePicker)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowDatePicker(!showDatePicker);
+                                    }}
                                     className={clsx(
                                         "flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium",
                                         isPast(task.dueDate) && !isToday(task.dueDate)
@@ -359,7 +362,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         ) : (
                             <div className={clsx("relative transition-opacity", (isSelected || showDatePicker) ? "opacity-100" : "opacity-0 group-hover/item:opacity-100")}>
                                 <button
-                                    onClick={() => setShowDatePicker(true)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowDatePicker(true);
+                                    }}
                                     className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
                                 >
                                     <Calendar size={10} />

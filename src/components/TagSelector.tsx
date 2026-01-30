@@ -51,7 +51,10 @@ export const TagSelector: React.FC<TagSelectorProps> = ({ taskId, isVisible }) =
     return (
         <div className="relative" ref={containerRef}>
             <button
-                onClick={() => setShowMenu(!showMenu)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(!showMenu);
+                }}
                 className={clsx(
                     "flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] transition-opacity",
                     (isVisible || showMenu) ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
