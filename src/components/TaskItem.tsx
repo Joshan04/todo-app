@@ -196,6 +196,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             {/* Task Row */}
             <div
                 data-task-id={taskId}
+                data-task-item="true"
                 onClick={handleRowClick}
                 className={clsx(
                     "flex items-start py-1 px-2 -mx-2 rounded-md hover:bg-gray-100 group-hover/item:bg-gray-100 transition-colors dark:hover:bg-gray-800 dark:group-hover/item:bg-gray-800",
@@ -279,41 +280,16 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     </div>
 
                     {/* Metadata Row (Tags, Due Date, Subtask count) */}
-                    <div className={clsx(
-                        "flex items-center gap-3 mt-1 text-xs text-gray-400 h-5",
-                        // Combined Visibility Logic:
-                        // Always show if: 1. has metadata AND (desktop hover OR mobile selected)
-                        // If NO metadata: hidden unless (desktop hover OR mobile selected)
-                        // Wait, previous logic was: hidden group-hover:flex IF empty.
-                        // If NOT empty, it was always flex? No, looking at lines 251:
-                        // (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) && "hidden group-hover/item:flex"
-                        // Meaning: if empty, hide until hover. If NOT empty, it's visible?
-                        // Actually, lines 251 says: `className={clsx(..., (empty) && "hidden group-hover/item:flex")}`
-                        // This means if it HAS content, it's always flex?
-                        // Let's check original logic carefully.
-                        // "flex items-center ... h-5" -> always flex unless condition.
-                        // Condition: `(empty) && "hidden group-hover/item:flex"`
-                        // So if empty, it's hidden by default, shown on hover.
-                        // If NOT empty (e.g. has tags), it's ALWAYS visible?
-                        // User request: "hovering a task reveals secondary actions".
-                        // This implies actions are usually hidden?
-                        // But if a task has a Date, is it visible?
-                        // Desktop Notion: Date/Tags are visible if set. Actions (buttons) are hidden.
-                        // Let's look at the Action Buttons row (DatePicker, TagSelector, Notes, Delete).
-                        // I haven't reached that part yet in this replacement.
-                        // This replacement covers lines 17-251~.
-                        // The action buttons are further down.
-                        // I should update THIS metadata row to follow selection logic if needed,
-                        // AND the action buttons row below (not in this chunk yet or barely?).
-                        // Actually, the Action Buttons are usually inside this Metadata Row or separate?
-                        // I see `DatePicker`, `ListSelector` imports.
-                        // I need to find where the action buttons are.
-                        // They are likely AFTER line 260.
-                        // I'll proceed with this chunk update first to setup state/handlers.
-                        // And I'll update the metadata row logic to be safe.
-                        (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) &&
-                        (isSelected ? "flex" : "hidden group-hover/item:flex")
-                    )}>
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={clsx(
+                            "flex items-center gap-3 mt-1 text-xs text-gray-400 h-5",
+                            // Combined Visibility Logic:
+                            // Always show if: 1. has metadata AND (desktop hover OR mobile selected)
+                            // If NO metadata: hidden unless (desktop hover OR mobile selected)
+                            (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) &&
+                            (isSelected ? "flex" : "hidden group-hover/item:flex")
+                        )}>
                         {/* Subtask progress */}
                         {hasSubtasks && (
                             <span
