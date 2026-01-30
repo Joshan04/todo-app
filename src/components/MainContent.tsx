@@ -59,8 +59,13 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
             const target = e.target as Element;
+            // Close menus if clicked outside
             if (!target.closest('[data-menu-container]')) {
                 setOpenMenu(null);
+            }
+            // Clear selected task if clicked outside any task item on mobile
+            if (window.innerWidth < 768 && !target.closest('[data-task-item]')) {
+                useTaskStore.getState().selectTask(null);
             }
         };
 

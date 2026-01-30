@@ -19,7 +19,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         toggleTask,
         setExpanded,
         updateTask,
-        tags: availableTags
+        tags: availableTags,
+        selectedTaskId,
+        selectTask
     } = useTaskStore();
 
     const task = tasks[taskId];
@@ -32,6 +34,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const [noteDraft, setNoteDraft] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
     const notesRef = useRef<HTMLTextAreaElement>(null);
+
+    const isSelected = selectedTaskId === taskId;
 
     // Initialize draft when opening notes
     useEffect(() => {
@@ -59,6 +63,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const handleToggleExpand = (e: React.MouseEvent) => {
         e.stopPropagation();
         setExpanded(taskId, !task.expanded);
+    };
+
+    const handleRowClick = () => {
+        // Only for mobile
+        if (window.innerWidth < 768) {
+            // If editing title, don't toggle selection
+            if (isEditing) return;
+
+            // Toggle selection
+            if (isSelected) {
+                selectTask(null);
+            } else {
+                selectTask(taskId);
+            }
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -177,10 +196,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             {/* Task Row */}
             <div
                 data-task-id={taskId}
+                onClick={handleRowClick}
                 className={clsx(
                     "flex items-start py-1 px-2 -mx-2 rounded-md hover:bg-gray-100 group-hover/item:bg-gray-100 transition-colors dark:hover:bg-gray-800 dark:group-hover/item:bg-gray-800",
                     depth > 0 && "ml-4",
-                    isFocused && "ring-2 ring-blue-500 ring-opacity-50"
+                    isFocused && "ring-2 ring-blue-500 ring-opacity-50",
+                    isSelected && "bg-gray-100 dark:bg-gray-800" // Highlight on mobile selection
                 )}
                 style={{ paddingLeft: `${depth * 24 + 8}px` }}
                 onFocus={() => setIsFocused(true)}
@@ -205,7 +226,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
                     {/* Checkbox */}
                     <button
-                        onClick={() => toggleTask(taskId)}
+                        onClick={(e) => { e.stopPropagation(); toggleTask(taskId); }}
                         className={clsx(
                             "w-5 h-5 rounded border border-gray-300 flex items-center justify-center transition-colors ml-1 dark:border-gray-600",
                             task.completed ? "bg-gray-900 border-gray-900 text-white dark:bg-white dark:border-white dark:text-black" : "hover:border-gray-400 bg-white dark:bg-gray-800 dark:hover:border-gray-500"
@@ -228,12 +249,22 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 onChange={(e) => updateTask(taskId, { title: e.target.value })}
                                 onBlur={() => setIsEditing(false)}
                                 onKeyDown={handleKeyDown}
+                                onClick={(e) => e.stopPropagation()} // Prevent row click
                                 className="bg-transparent w-full outline-none border-b border-blue-500 pb-0.5 text-gray-900 dark:text-gray-100"
                             />
                         ) : (
                             <span
                                 id={`task-title-${taskId}`}
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Handle edit click separately to avoid conflict? Or let it bubble?
+                                    // Original logic: click title -> edit.
+                                    // Row tap should toggle selection.
+                                    // Requirement: "Tap title -> Edit" (implied desktop behavior parity).
+                                    // Mobile: If title is tapped, maybe edit? Or reveal actions?
+                                    // User said: "Tap task row toggles active state".
+                                    // Actually, let's allow row click to handle selection. Title click is specific action.
+                                    // If title click triggers edit, it shouldn't toggle selection?
+                                    // Let's keep title edit logic but stop propagation so it doesn't trigger row selection toggle if desired.
                                     setOriginalTitle(task.title);
                                     setIsEditing(true);
                                 }}
@@ -248,7 +279,41 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     </div>
 
                     {/* Metadata Row (Tags, Due Date, Subtask count) */}
-                    <div className={clsx("flex items-center gap-3 mt-1 text-xs text-gray-400 h-5", (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) && "hidden group-hover/item:flex")}>
+                    <div className={clsx(
+                        "flex items-center gap-3 mt-1 text-xs text-gray-400 h-5",
+                        // Combined Visibility Logic:
+                        // Always show if: 1. has metadata AND (desktop hover OR mobile selected)
+                        // If NO metadata: hidden unless (desktop hover OR mobile selected)
+                        // Wait, previous logic was: hidden group-hover:flex IF empty.
+                        // If NOT empty, it was always flex? No, looking at lines 251:
+                        // (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) && "hidden group-hover/item:flex"
+                        // Meaning: if empty, hide until hover. If NOT empty, it's visible?
+                        // Actually, lines 251 says: `className={clsx(..., (empty) && "hidden group-hover/item:flex")}`
+                        // This means if it HAS content, it's always flex?
+                        // Let's check original logic carefully.
+                        // "flex items-center ... h-5" -> always flex unless condition.
+                        // Condition: `(empty) && "hidden group-hover/item:flex"`
+                        // So if empty, it's hidden by default, shown on hover.
+                        // If NOT empty (e.g. has tags), it's ALWAYS visible?
+                        // User request: "hovering a task reveals secondary actions".
+                        // This implies actions are usually hidden?
+                        // But if a task has a Date, is it visible?
+                        // Desktop Notion: Date/Tags are visible if set. Actions (buttons) are hidden.
+                        // Let's look at the Action Buttons row (DatePicker, TagSelector, Notes, Delete).
+                        // I haven't reached that part yet in this replacement.
+                        // This replacement covers lines 17-251~.
+                        // The action buttons are further down.
+                        // I should update THIS metadata row to follow selection logic if needed,
+                        // AND the action buttons row below (not in this chunk yet or barely?).
+                        // Actually, the Action Buttons are usually inside this Metadata Row or separate?
+                        // I see `DatePicker`, `ListSelector` imports.
+                        // I need to find where the action buttons are.
+                        // They are likely AFTER line 260.
+                        // I'll proceed with this chunk update first to setup state/handlers.
+                        // And I'll update the metadata row logic to be safe.
+                        (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) &&
+                        (isSelected ? "flex" : "hidden group-hover/item:flex")
+                    )}>
                         {/* Subtask progress */}
                         {hasSubtasks && (
                             <span
@@ -291,7 +356,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 )}
                             </div>
                         ) : (
-                            <div className="relative opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <div className={clsx("relative transition-opacity", (isSelected || showDatePicker) ? "opacity-100" : "opacity-0 group-hover/item:opacity-100")}>
                                 <button
                                     onClick={() => setShowDatePicker(true)}
                                     className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
@@ -320,7 +385,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 }}
                                 className={clsx(
                                     "flex items-center gap-1 rounded text-[11px] hover:text-gray-600 dark:hover:text-gray-300 transition-colors",
-                                    task.notes ? "text-gray-500 dark:text-gray-400" : "text-gray-400 opacity-0 group-hover/item:opacity-100"
+                                    task.notes
+                                        ? "text-gray-500 dark:text-gray-400"
+                                        : (isSelected || showNotes)
+                                            ? "text-gray-400"
+                                            : "text-gray-400 opacity-0 group-hover/item:opacity-100"
                                 )}
                                 aria-label={task.notes ? "Edit notes" : "Add notes"}
                             >
