@@ -324,9 +324,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             </span>
                         )}
 
-                        <ListSelector taskId={taskId} />
 
-                        <TagSelector taskId={taskId} />
+                        <ListSelector taskId={taskId} isVisible={isSelected} />
+
+                        <TagSelector taskId={taskId} isVisible={isSelected} />
 
                         {renderTags()}
 

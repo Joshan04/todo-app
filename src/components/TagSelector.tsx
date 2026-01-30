@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Hash, Plus, Check } from 'lucide-react';
+import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
 
 interface TagSelectorProps {
     taskId: string;
+    isVisible?: boolean;
 }
 
-export const TagSelector: React.FC<TagSelectorProps> = ({ taskId }) => {
+export const TagSelector: React.FC<TagSelectorProps> = ({ taskId, isVisible }) => {
     const { tasks, tags, updateTask } = useTaskStore();
     const task = tasks[taskId];
     const [showMenu, setShowMenu] = useState(false);
@@ -50,7 +52,10 @@ export const TagSelector: React.FC<TagSelectorProps> = ({ taskId }) => {
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] opacity-0 group-hover/item:opacity-100 transition-opacity"
+                className={clsx(
+                    "flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] transition-opacity",
+                    (isVisible || showMenu) ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
+                )}
                 aria-haspopup="menu"
                 aria-expanded={showMenu}
                 aria-label="Add or remove tags"
