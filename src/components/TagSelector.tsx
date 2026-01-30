@@ -80,13 +80,13 @@ export const TagSelector: React.FC<TagSelectorProps> = ({ taskId }) => {
                                 }
                             }
                         }}
-                        onChange={(e) => {
+                        onChange={() => {
                             // Assuming simple filter for now, or just let CSS/React filter list below
                             // Since we don't have local state for filter string yet, I'll add it.
                         }}
                     />
                     <div className="max-h-48 overflow-y-auto">
-                        {tags.filter(t => {
+                        {tags.filter(() => {
                             // Helper to get input value? 
                             // Since replace_file_content replaces a block, I should introduce searching state in the component.
                             // I need to update the ENTIRE component logic or just specific parts.

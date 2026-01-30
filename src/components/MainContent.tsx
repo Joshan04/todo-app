@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { useTheme } from '../hooks/useTheme';
-import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon, Monitor } from 'lucide-react';
+import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon } from 'lucide-react';
 import { TaskItem } from './TaskItem';
 
 export const MainContent = () => {
@@ -21,9 +21,7 @@ export const MainContent = () => {
         setSortBy,
         collapseAll,
         expandAll,
-        clearCompleted,
-        searchQuery,
-        setSearchQuery
+        clearCompleted
     } = useTaskStore();
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');

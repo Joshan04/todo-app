@@ -19,8 +19,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         toggleTask,
         setExpanded,
         updateTask,
-        tags: availableTags,
-        searchQuery
+        tags: availableTags
     } = useTaskStore();
 
     const task = tasks[taskId];
