@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { useTheme } from '../hooks/useTheme';
-import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon } from 'lucide-react';
+import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon, Menu } from 'lucide-react';
 import { TaskItem } from './TaskItem';
 
-export const MainContent = () => {
+interface MainContentProps {
+    onOpenMobileMenu: () => void;
+}
+
+export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) => {
     const {
         tasks,
         activeView,
@@ -115,8 +119,15 @@ export const MainContent = () => {
     return (
         <main className="flex-1 h-screen flex flex-col bg-white overflow-hidden dark:bg-gray-950">
             {/* Header */}
-            <header className="h-14 border-b border-gray-100 flex items-center justify-between px-8 bg-white dark:bg-gray-950 dark:border-gray-800">
+            <header className="h-14 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-white dark:bg-gray-950 dark:border-gray-800">
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={onOpenMobileMenu}
+                        className="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        aria-label="Open menu"
+                    >
+                        <Menu size={20} />
+                    </button>
                     <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">{getTitle()}</h1>
                     {(activeListId || activeTagId) && (
                         <button
