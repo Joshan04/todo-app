@@ -7,7 +7,6 @@ import {
     Settings,
     Search,
     Plus,
-    Layout,
     CheckCircle,
     X
 } from 'lucide-react';
