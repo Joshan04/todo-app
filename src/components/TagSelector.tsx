@@ -106,7 +106,10 @@ export const TagSelector: React.FC<TagSelectorProps> = ({ taskId, isVisible }) =
                             return (
                                 <button
                                     key={tag.id}
-                                    onClick={() => toggleTag(tag.id)}
+                                    onClick={() => {
+                                        toggleTag(tag.id);
+                                        setShowMenu(false);
+                                    }}
                                     className="w-full px-3 py-1.5 text-left text-xs hover:bg-gray-100 flex items-center gap-2 rounded-sm dark:hover:bg-gray-700 dark:text-gray-100"
                                     role="menuitemcheckbox"
                                     aria-checked={isActive}

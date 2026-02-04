@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                     </div>
 
                     {/* Lists/Projects */}
-                    <div>
+                    <div className="pt-4">
                         <div className="flex items-center justify-between px-3 mb-1 text-xs font-semibold text-gray-400">
                             <span>LISTS</span>
                             <Plus

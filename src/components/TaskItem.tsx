@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreHorizontal } from 'lucide-react';
 import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
 import { DatePicker } from './DatePicker';
@@ -19,6 +19,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         toggleTask,
         setExpanded,
         updateTask,
+        deleteTask,
+        addTask,
         tags: availableTags,
         selectedTaskId,
         selectTask
@@ -216,7 +218,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         onClick={handleToggleExpand}
                         className={clsx(
                             "p-0.5 rounded hover:bg-gray-200 text-gray-400 transition-colors w-5 h-5 flex items-center justify-center dark:hover:bg-gray-700",
-                            (!hasSubtasks) && "opacity-0 group-hover/item:opacity-100"
+                            (!hasSubtasks) && "opacity-0 md:group-hover/item:opacity-100"
                         )}
                         aria-label={hasSubtasks ? (task.expanded ? "Collapse subtasks" : "Expand subtasks") : "No subtasks"}
                         aria-expanded={hasSubtasks ? task.expanded : undefined}
@@ -378,6 +380,61 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             >
                                 <AlignLeft size={10} />
                                 {(!task.notes && !showNotes) && <span>Add note</span>}
+                            </button>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className={clsx(
+                            "flex items-center gap-2 ml-auto",
+                            isSelected ? "opacity-100" : "opacity-0 md:group-hover/item:opacity-100"
+                        )}>
+                            {/* Add Subtask */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newSubtaskId = addTask('', taskId); // Add with current task as parent
+                                    setExpanded(taskId, true); // Expand to show new subtask
+
+                                    // Auto-focus new subtask for immediate naming
+                                    setTimeout(() => {
+                                        const newTaskElement = document.querySelector(`[data-task-id="${newSubtaskId}"]`);
+                                        const titleSpan = newTaskElement?.querySelector('.task-title') as HTMLElement;
+                                        if (titleSpan) {
+                                            titleSpan.click(); // Enters edit mode
+                                        }
+                                    }, 50);
+                                }}
+                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
+                                title="Add subtask"
+                            >
+                                <Plus size={14} />
+                            </button>
+
+                            {/* Delete Task */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Delete "${task.title || 'this task'}"?`)) {
+                                        deleteTask(taskId);
+                                    }
+                                }}
+                                className="flex items-center gap-1 text-gray-400 hover:text-red-600 text-[11px] dark:hover:text-red-400"
+                                title="Delete task"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+
+                            {/* More Menu (optional, for future actions) */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Future: open context menu
+                                }}
+                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300 opacity-0"
+                                title="More actions"
+                                disabled
+                            >
+                                <MoreHorizontal size={14} />
                             </button>
                         </div>
                     </div>

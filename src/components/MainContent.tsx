@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { useTheme } from '../hooks/useTheme';
 import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon, Menu } from 'lucide-react';
+import clsx from 'clsx';
 import { TaskItem } from './TaskItem';
 
 interface MainContentProps {
@@ -107,7 +108,7 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
         }
         if (activeTagId) {
             const tag = tags.find(t => t.id === activeTagId);
-            return tag ? `#${tag.name}` : 'Tag';
+            return tag ? `#${tag.name} ` : 'Tag';
         }
 
         switch (activeView) {
@@ -134,6 +135,25 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
                         <Menu size={20} />
                     </button>
                     <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">{getTitle()}</h1>
+
+                    {/* View Tabs - Desktop Only */}
+                    <div className="hidden md:flex items-center gap-1 ml-2">
+                        {(['all', 'today', 'upcoming'] as const).map(view => (
+                            <button
+                                key={view}
+                                onClick={() => setActiveView(view)}
+                                className={clsx(
+                                    "px-2 py-1 text-xs rounded-md transition-colors",
+                                    activeView === view && !activeListId && !activeTagId
+                                        ? "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100"
+                                        : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                )}
+                            >
+                                {view === 'all' ? 'All' : view.charAt(0).toUpperCase() + view.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+
                     {(activeListId || activeTagId) && (
                         <button
                             onClick={() => setActiveView('all')}
@@ -152,7 +172,7 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
                     <button
                         onClick={cycleTheme}
                         className="p-1.5 hover:bg-gray-100 rounded-md dark:hover:bg-gray-800"
-                        title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
+                        title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)} `}
                         aria-label="Toggle theme"
                     >
                         {getThemeIcon()}
@@ -270,40 +290,11 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
                 </div>
             </header>
 
-            {/* Task List Container */}
-            <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
-                <ul className="space-y-1 pb-20 list-none">
-                    {filteredTaskIds.length === 0 ? (
-                        <div className="text-gray-400 text-center mt-20 dark:text-gray-500">
-                            {Object.keys(tasks).length === 0 ? (
-                                <>
-                                    <p className="text-sm">No tasks yet.</p>
-                                    <p className="text-xs mt-1">Press Enter or click "Add a task".</p>
-                                </>
-                            ) : (
-                                (!activeListId && !activeTagId && (activeView === 'today' || activeView === 'upcoming')) ? (
-                                    <>
-                                        <p className="text-sm">No tasks with due dates here yet.</p>
-                                        <p className="text-xs mt-1">Add a due date to see tasks in this view.</p>
-                                    </>
-                                ) : activeView === 'completed' ? (
-                                    <p className="text-sm">No completed tasks yet.</p>
-                                ) : (
-                                    <>
-                                        <p className="text-sm">No tasks match the current filters.</p>
-                                        <p className="text-xs mt-1">Try switching lists, tags, or views.</p>
-                                    </>
-                                )
-                            )}
-                        </div>
-                    ) : (
-                        filteredTaskIds.map(rootId => (
-                            <TaskItem key={rootId} taskId={rootId} />
-                        ))
-                    )}
-
-                    {/* Inline Add Task Input - Notion Style */}
-                    <div className="group/add mt-2">
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-y-auto">
+                {/* Add Task Input - Directly Under Header */}
+                <div className="max-w-4xl mx-auto w-full px-8 pt-6">
+                    <div className="group/add">
                         {isAddingTask ? (
                             <div className="flex items-start py-1 px-2 -mx-2 rounded-md bg-gray-50 dark:bg-gray-800/50">
                                 <div className="flex items-center gap-1 mt-0.5 relative -left-1">
@@ -349,7 +340,7 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
                                 />
                                 {(!activeListId && !activeTagId && (activeView === 'today' || activeView === 'upcoming')) && (
                                     <div className="absolute left-0 -bottom-5 text-[10px] text-gray-400 pl-8 pointer-events-none w-max">
-                                        Tasks without due dates won’t appear here
+                                        Tasks without due dates won't appear here
                                     </div>
                                 )}
                             </div>
@@ -363,7 +354,41 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
                             </div>
                         )}
                     </div>
-                </ul>
+                </div>
+
+                {/* Task List */}
+                <div className="px-8 max-w-4xl mx-auto w-full pt-4">
+                    <ul className="space-y-1 pb-20 list-none">
+                        {filteredTaskIds.length === 0 ? (
+                            <div className="text-gray-400 text-center mt-20 dark:text-gray-500">
+                                {Object.keys(tasks).length === 0 ? (
+                                    <>
+                                        <p className="text-sm">No tasks yet.</p>
+                                        <p className="text-xs mt-1">Press Enter or click "Add a task".</p>
+                                    </>
+                                ) : (
+                                    (!activeListId && !activeTagId && (activeView === 'today' || activeView === 'upcoming')) ? (
+                                        <>
+                                            <p className="text-sm">No tasks with due dates here yet.</p>
+                                            <p className="text-xs mt-1">Add a due date to see tasks in this view.</p>
+                                        </>
+                                    ) : activeView === 'completed' ? (
+                                        <p className="text-sm">No completed tasks yet.</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm">No tasks match the current filters.</p>
+                                            <p className="text-xs mt-1">Try switching lists, tags, or views.</p>
+                                        </>
+                                    )
+                                )}
+                            </div>
+                        ) : (
+                            filteredTaskIds.map(rootId => (
+                                <TaskItem key={rootId} taskId={rootId} />
+                            ))
+                        )}
+                    </ul>
+                </div>
             </div>
 
             {/* Confirmation Dialog for Clear Completed */}

@@ -86,6 +86,8 @@ export const useTaskStore = create<TaskState>()(
                         };
                     }
                 });
+
+                return id; // Return the new task ID
             },
 
             addSubtask: (parentId, title) => {
@@ -337,11 +339,21 @@ export const useTaskStore = create<TaskState>()(
                         return task.listId === activeListId;
                     }
 
-                    // 3. Guard: Tag Mode (Exclusive)
+                    // 3. Guard: Tag Mode (Exclusive, with hierarchy)
                     if (activeTagId !== null) {
-                        // If we are in a tag, we ONLY care if it matches the tag.
-                        // We DO NOT apply View filters.
-                        return task.tags.includes(activeTagId);
+                        // Check if task or ANY descendant has the tag
+                        const hasTagInTree = (taskId: string): boolean => {
+                            const t = tasks[taskId];
+                            if (!t) return false;
+
+                            // Check this task
+                            if (t.tags.includes(activeTagId)) return true;
+
+                            // Check all subtasks recursively
+                            return t.subtasks.some(childId => hasTagInTree(childId));
+                        };
+
+                        return hasTagInTree(taskId);
                     }
 
                     // 4. Guard: View Mode (Only if NO list or tag active)
