@@ -7,6 +7,7 @@ import {
     Settings,
     Search,
     Plus,
+    Layout,
     CheckCircle,
     X
 } from 'lucide-react';
@@ -88,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
             )}
 
             <aside className={clsx(
-                "w-64 bg-gray-50 border-r border-gray-200 h-screen flex flex-col dark:bg-gray-900 dark:border-gray-800",
+                "w-64 bg-gray-50 border-r border-gray-200 h-[100dvh] flex flex-col dark:bg-gray-900 dark:border-gray-800",
                 "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:translate-x-0 md:static",
                 isMobileOpen ? "translate-x-0" : "-translate-x-full"
             )}>
@@ -97,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                     <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">T</span>
+                                <Layout className="text-white" size={20} />
                             </div>
                             <span className="font-semibold text-gray-900 dark:text-gray-100">Taskflow</span>
                         </div>
