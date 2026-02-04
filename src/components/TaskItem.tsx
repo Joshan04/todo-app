@@ -201,12 +201,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                 data-task-item="true"
                 onClick={handleRowClick}
                 className={clsx(
-                    "flex items-start py-1 px-2 -mx-2 rounded-md hover:bg-gray-100 group-hover/item:bg-gray-100 transition-colors dark:hover:bg-gray-800 dark:group-hover/item:bg-gray-800",
+                    "flex items-start py-1 px-4 -mx-4 rounded-md hover:bg-gray-100 group-hover/item:bg-gray-100 transition-colors dark:hover:bg-gray-800 dark:group-hover/item:bg-gray-800",
                     depth > 0 && "ml-4",
                     isFocused && "ring-2 ring-blue-500 ring-opacity-50",
                     isSelected && "bg-gray-100 dark:bg-gray-800" // Highlight on mobile selection
                 )}
-                style={{ paddingLeft: `${depth * 24 + 8}px` }}
+                style={{ paddingLeft: `${depth * 24 + 16}px` }}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 tabIndex={0}

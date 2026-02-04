@@ -93,117 +93,125 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                 "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:translate-x-0 md:static",
                 isMobileOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <div className="p-4 flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center text-white dark:bg-white dark:text-black">
-                        <Layout size={14} />
-                    </div>
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">Taskflow</span>
-                </div>
-
-                <div className="px-3 mb-2">
-                    <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-md text-gray-500 hover:text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300">
-                        <Search size={16} />
-                        <input
-                            type="text"
-                            placeholder="Search"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-500 dark:text-gray-100 dark:placeholder:text-gray-500"
-                        />
-                        <div className="flex items-center gap-1">
-                            <kbd className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">⌘ K</kbd>
+                <div className="flex flex-col h-full bg-white dark:bg-gray-950">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <span className="text-white font-bold text-sm">T</span>
+                            </div>
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">Taskflow</span>
                         </div>
                     </div>
-                </div>
 
-                <nav className="flex-1 overflow-y-auto px-2 space-y-6">
-                    {/* Main Views */}
-                    <div className="space-y-0.5">
-                        {navItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => handleNavigation(() => setActiveView(item.id))}
-                                className={clsx(
-                                    "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
-                                    activeView === item.id && activeListId === null && activeTagId === null
-                                        ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
-                                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                                )}
-                            >
-                                {item.icon}
-                                <span className="flex-1 text-left">{item.label}</span>
-                                <span className="text-xs text-gray-400">{getCount(item.id)}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Lists/Projects */}
-                    <div className="pt-4">
-                        <div className="flex items-center justify-between px-3 mb-1 text-xs font-semibold text-gray-400">
-                            <span>LISTS</span>
-                            <Plus
-                                size={14}
-                                className="cursor-pointer hover:text-gray-600"
-                                onClick={() => {
-                                    const name = prompt('Enter new list name:');
-                                    if (name && name.trim()) {
-                                        useTaskStore.getState().addList(name.trim());
-                                    }
-                                }}
+                    {/* Search */}
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-md dark:bg-gray-900">
+                            <Search size={16} className="text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-500 dark:text-gray-100 dark:placeholder:text-gray-500"
                             />
-                        </div>
-                        <div className="space-y-0.5">
-                            {lists.map(list => (
-                                <button
-                                    key={list.id}
-                                    onClick={() => handleNavigation(() => setActiveList(list.id))}
-                                    className={clsx(
-                                        "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
-                                        activeListId === list.id
-                                            ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
-                                            : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                                    )}
-                                    aria-current={activeListId === list.id ? 'page' : undefined}
-                                >
-                                    <span>{list.icon}</span>
-                                    <span>{list.name}</span>
-                                </button>
-                            ))}
+                            <div className="flex items-center gap-1">
+                                <kbd className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">⌘ K</kbd>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Tags */}
-                    <div>
-                        <div className="px-3 mb-1 text-xs font-semibold text-gray-400">TAGS</div>
+                    {/* Scrollable Navigation Content */}
+                    <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-6 min-h-0">
+                        {/* Main Views */}
                         <div className="space-y-0.5">
-                            {tags.map(tag => (
+                            {navItems.map((item) => (
                                 <button
-                                    key={tag.id}
-                                    onClick={() => handleNavigation(() => setActiveTag(tag.id))}
+                                    key={item.id}
+                                    onClick={() => handleNavigation(() => setActiveView(item.id))}
                                     className={clsx(
                                         "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
-                                        activeTagId === tag.id
+                                        activeView === item.id && activeListId === null && activeTagId === null
                                             ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
                                             : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                                     )}
-                                    aria-current={activeTagId === tag.id ? 'page' : undefined}
                                 >
-                                    <Hash size={16} />
-                                    <span>{tag.name}</span>
+                                    {item.icon}
+                                    <span className="flex-1 text-left">{item.label}</span>
+                                    <span className="text-xs text-gray-400">{getCount(item.id)}</span>
                                 </button>
                             ))}
                         </div>
-                    </div>
-                </nav>
 
-                <div className="p-2 border-t border-gray-200 dark:border-gray-800">
-                    <button
-                        onClick={() => setShowSettings(true)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                    >
-                        <Settings size={18} />
-                        <span>Settings</span>
-                    </button>
+                        {/* Lists/Projects */}
+                        <div className="pt-4">
+                            <div className="flex items-center justify-between px-3 mb-1 text-xs font-semibold text-gray-400">
+                                <span>LISTS</span>
+                                <Plus
+                                    size={14}
+                                    className="cursor-pointer hover:text-gray-600"
+                                    onClick={() => {
+                                        const name = prompt('Enter new list name:');
+                                        if (name && name.trim()) {
+                                            useTaskStore.getState().addList(name.trim());
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <div className="space-y-0.5">
+                                {lists.map(list => (
+                                    <button
+                                        key={list.id}
+                                        onClick={() => handleNavigation(() => setActiveList(list.id))}
+                                        className={clsx(
+                                            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+                                            activeListId === list.id
+                                                ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
+                                                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                        )}
+                                        aria-current={activeListId === list.id ? 'page' : undefined}
+                                    >
+                                        <span>{list.icon}</span>
+                                        <span>{list.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Tags */}
+                        <div>
+                            <div className="px-3 mb-1 text-xs font-semibold text-gray-400">TAGS</div>
+                            <div className="space-y-0.5">
+                                {tags.map(tag => (
+                                    <button
+                                        key={tag.id}
+                                        onClick={() => handleNavigation(() => setActiveTag(tag.id))}
+                                        className={clsx(
+                                            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+                                            activeTagId === tag.id
+                                                ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
+                                                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                        )}
+                                        aria-current={activeTagId === tag.id ? 'page' : undefined}
+                                    >
+                                        <Hash size={16} />
+                                        <span>{tag.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Settings Button - Fixed at Bottom */}
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                        <button
+                            onClick={() => setShowSettings(true)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                        >
+                            <Settings size={18} />
+                            <span>Settings</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Settings Modal */}
