@@ -9,11 +9,14 @@ import {
     Plus,
     Layout,
     CheckCircle,
-    X
+    X,
+    LogIn
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useTheme } from '../hooks/useTheme';
+import { AuthModal } from './AuthModal';
 import type { ViewType } from '../types';
 
 interface SidebarProps {
@@ -24,7 +27,9 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
     const { activeView, setActiveView, activeListId, setActiveList, activeTagId, setActiveTag, lists, tags, tasks, searchQuery, setSearchQuery } = useTaskStore();
     const [showSettings, setShowSettings] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
     const { theme, setTheme } = useTheme();
+    const { user, logout } = useAuthStore();
 
     // Close on Escape
     useEffect(() => {
@@ -202,8 +207,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                         </div>
                     </nav>
 
-                    {/* Settings Button - Fixed at Bottom */}
-                    <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                    {/* Settings & Auth Button - Fixed at Bottom */}
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 space-y-2">
+                        {user ? (
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-md text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    {user.photoURL ? (
+                                        <img src={user.photoURL} alt="User" className="w-6 h-6 rounded-full" />
+                                    ) : (
+                                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
+                                            {user.email?.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <span className="truncate max-w-[100px]">{user.displayName || user.email?.split('@')[0]}</span>
+                                </div>
+                                <button
+                                    onClick={() => logout()}
+                                    className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowAuthModal(true)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"
+                            >
+                                <LogIn size={18} />
+                                <span>Sign In</span>
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowSettings(true)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
@@ -260,6 +293,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                         </div>
                     </div>
                 )}
+
+                <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
             </aside>
         </>
     );
