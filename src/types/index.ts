@@ -39,12 +39,14 @@ export interface TaskState {
     activeListId: string | null;
     activeTagId: string | null;
     selectedTaskId: string | null;
+    editingTaskId: string | null;
+    autoEditTaskId: string | null;
     showCompleted: boolean;
     sortBy: SortOption;
     searchQuery: string;
 
     // Actions
-    addTask: (title: string, parentId?: string) => void;
+    addTask: (title: string, parentId?: string) => string;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     updateTaskTitle: (id: string, title: string) => void;
@@ -54,6 +56,8 @@ export interface TaskState {
     setActiveList: (listId: string | null) => void;
     setActiveTag: (tagId: string | null) => void;
     selectTask: (id: string | null) => void;
+    setEditingTask: (id: string | null) => void;
+    setAutoEditTask: (id: string | null) => void;
     setSearchQuery: (query: string) => void;
     addSubtask: (parentId: string, title: string) => void;
     indentTask: (id: string) => void;

@@ -25,7 +25,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         tags: availableTags,
         selectedTaskId,
         selectTask,
-        updateTaskTitle
+        updateTaskTitle,
+        editingTaskId,
+        setEditingTask,
+        autoEditTaskId,
+        setAutoEditTask
     } = useTaskStore();
 
     const rawTask = tasks[taskId];
@@ -42,7 +46,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         dueDate: null
     } as Task;
 
-    const [isEditing, setIsEditing] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -52,6 +55,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const notesRef = useRef<HTMLTextAreaElement>(null);
 
     const isSelected = selectedTaskId === taskId;
+    const isEditing = editingTaskId === taskId;
 
     // Initialize draft when opening notes
     useEffect(() => {
@@ -73,6 +77,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             inputRef.current.focus();
         }
     }, [isEditing]);
+
+    // Auto-edit newly created subtasks
+    useEffect(() => {
+        if (autoEditTaskId === taskId) {
+            setEditingTask(taskId);
+            // Clear the auto-edit flag after a short delay
+            setTimeout(() => {
+                setAutoEditTask(null);
+            }, 100);
+        }
+    }, [autoEditTaskId, taskId, setEditingTask, setAutoEditTask]);
 
     if (!rawTask) {
         // console.warn("[Armor] task not found in store, skipping render", taskId);
@@ -102,7 +117,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            setIsEditing(false);
+            setEditingTask(null);
 
             // Create sibling task at same hierarchy level
             const newTaskId = useTaskStore.getState().addSiblingTask(taskId, '');
@@ -118,7 +133,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
         } else if (e.key === 'Escape') {
             e.preventDefault();
-            setIsEditing(false);
+            setEditingTask(null);
 
         } else if (e.key === 'Backspace' && task.title === '') {
             e.preventDefault();
@@ -157,7 +172,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
             const targetTaskId = visibleIds[targetIndex];
             if (targetTaskId && targetTaskId !== taskId) {
-                setIsEditing(false);
+                setEditingTask(null);
                 setTimeout(() => {
                     const targetElement = document.querySelector(`[data-task-id="${targetTaskId}"]`);
                     const titleSpan = targetElement?.querySelector('.task-title') as HTMLElement;
@@ -264,7 +279,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 ref={inputRef}
                                 value={task.title ?? ""}
                                 onChange={(e) => updateTaskTitle(taskId, e.target.value)}
-                                onBlur={() => setIsEditing(false)}
+                                onBlur={() => setEditingTask(null)}
                                 onKeyDown={handleKeyDown}
                                 onClick={(e) => e.stopPropagation()} // Prevent row click
                                 className="bg-transparent w-full outline-none border-b border-blue-500 pb-0.5 text-gray-900 dark:text-gray-100"
@@ -282,7 +297,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                     // Actually, let's allow row click to handle selection. Title click is specific action.
                                     // If title click triggers edit, it shouldn't toggle selection?
                                     // Let's keep title edit logic but stop propagation so it doesn't trigger row selection toggle if desired.
-                                    setIsEditing(true);
+                                    setEditingTask(taskId);
                                 }}
                                 className={clsx(
                                     "task-title cursor-text select-none text-gray-900 dark:text-gray-100",
@@ -407,17 +422,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                     e.stopPropagation();
                                     const newSubtaskId = addTask('', taskId); // Add with current task as parent
                                     setExpanded(taskId, true); // Expand to show new subtask
-
-                                    // Auto-focus new subtask for immediate naming
-                                    setTimeout(() => {
-                                        const newTaskElement = document.querySelector(`[data-task-id="${newSubtaskId}"]`);
-                                        const titleSpan = newTaskElement?.querySelector('.task-title') as HTMLElement;
-                                        if (titleSpan) {
-                                            titleSpan.click(); // Enters edit mode
-                                        } else {
-                                            console.warn("[Armor] Could not find new subtask element to focus");
-                                        }
-                                    }, 100);
+                                    if (newSubtaskId) {
+                                        setAutoEditTask(newSubtaskId); // Mark for auto-editing
+                                    }
                                 }}
                                 className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
                                 title="Add subtask"

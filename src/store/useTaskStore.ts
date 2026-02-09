@@ -45,6 +45,8 @@ export const useTaskStore = create<TaskState>()(
             activeListId: null,
             activeTagId: null,
             selectedTaskId: null,
+            editingTaskId: null,
+            autoEditTaskId: null,
             showCompleted: false,
             sortBy: 'manual',
             searchQuery: '',
@@ -317,6 +319,8 @@ export const useTaskStore = create<TaskState>()(
                 activeView: state.activeView === 'completed' ? 'all' : state.activeView
             })),
             selectTask: (id) => set({ selectedTaskId: id }),
+            setEditingTask: (id: string | null) => set({ editingTaskId: id }),
+            setAutoEditTask: (id: string | null) => set({ autoEditTaskId: id }),
             setSearchQuery: (query) => set({ searchQuery: query }),
 
             indentTask: (id: string) => {

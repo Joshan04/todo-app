@@ -79,9 +79,9 @@ export function useFirestoreSync() {
             console.log("[Armor] Tasks sanitized:", Object.keys(tasks).length);
             console.log("[Sync] Tasks Update:", Object.keys(tasks).length);
 
-            useTaskStore.setState((state) => ({
+            useTaskStore.setState({
                 tasks: tasks
-            }));
+            });
         });
 
         // 2. Listen to Lists
