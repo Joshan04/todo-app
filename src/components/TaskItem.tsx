@@ -5,6 +5,7 @@ import { useTaskStore } from '../store/useTaskStore';
 import { DatePicker } from './DatePicker';
 import { ListSelector } from './ListSelector';
 import { TagSelector } from './TagSelector';
+import ConfirmModal from './ConfirmModal';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import type { Task } from '../types';
 
@@ -48,6 +49,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
     const [isFocused, setIsFocused] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
 
     const [showNotes, setShowNotes] = useState(false);
     const [noteDraft, setNoteDraft] = useState('');
@@ -436,9 +438,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm(`Delete "${task.title || 'this task'}"?`)) {
-                                        deleteTask(taskId);
-                                    }
+                                    setConfirmOpen(true);
                                 }}
                                 className="flex items-center gap-1 text-gray-400 hover:text-red-600 text-[11px] dark:hover:text-red-400"
                                 title="Delete task"
@@ -519,6 +519,20 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     })}
                 </div>
             )}
+
+            {/* Confirm Delete Modal */}
+            <ConfirmModal
+                open={confirmOpen}
+                title="Delete task"
+                message={`Delete "${task.title || 'this task'}"?`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={() => {
+                    deleteTask(taskId);
+                    setConfirmOpen(false);
+                }}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </li>
     );
 };
