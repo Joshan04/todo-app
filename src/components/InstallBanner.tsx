@@ -24,29 +24,30 @@ export default function InstallBanner() {
 
     return (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md rounded-xl bg-blue-600 text-white p-4 shadow-lg z-40 pointer-events-auto">
-            <div className="flex justify-between items-start gap-4">
+            <div className="flex justify-between items-center gap-4">
                 <div className="flex-1">
-                    <h3 className="font-semibold">Install Taskflow</h3>
-                    <p className="text-sm opacity-80">
-                        Add to your home screen for faster access and offline use.
+                    <h3 className="font-semibold text-base">Install Taskflow</h3>
+                    <p className="text-sm opacity-90 leading-tight mt-0.5">
+                        {isIOS
+                            ? "Tap Share → Add to Home Screen."
+                            : "Add Taskflow to your device for quick access anytime."}
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 shrink-0">
                     {canInstall && !isIOS && (
                         <button
                             onClick={handleInstall}
-                            className="bg-white text-blue-600 px-4 py-1.5 rounded font-medium hover:bg-gray-100 transition-colors whitespace-nowrap cursor-pointer"
+                            className="bg-white text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-sm hover:bg-opacity-90 transition-colors shadow-sm"
                         >
                             Install
                         </button>
                     )}
                     <button
                         onClick={handleClose}
-                        className="text-white opacity-70 hover:opacity-100 transition-opacity text-xl leading-none px-1 cursor-pointer"
-                        aria-label="Close"
+                        className="text-white/80 hover:text-white text-sm font-medium transition-colors"
                     >
-                        ✕
+                        Not now
                     </button>
                 </div>
             </div>
