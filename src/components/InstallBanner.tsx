@@ -26,19 +26,10 @@ export default function InstallBanner() {
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md rounded-xl bg-blue-600 text-white p-4 shadow-lg z-40 pointer-events-auto">
             <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
-                    <div className="font-semibold text-base mb-1">Install Taskflow</div>
-                    <div className="text-sm opacity-90">
-                        {isIOS ? (
-                            <>Tap <span className="font-semibold">Share</span> → <span className="font-semibold">Add to Home Screen</span></>
-                        ) : canInstall ? (
-                            "Use it like a real app."
-                        ) : (
-                            <>Tap the <span className="font-semibold">⋮</span> menu → <span className="font-semibold">Install app</span></>
-                        )}
-                    </div>
-                    <div className="text-xs opacity-50 mt-1 font-mono">
-                        DEBUG: can= {String(canInstall)}, Prompt={String((window as any).deferredPrompt ? 'YES' : 'NULL')}, SW_API={String('serviceWorker' in navigator)}, SW_Active={String(!!navigator.serviceWorker?.controller)}
-                    </div>
+                    <h3 className="font-semibold">Install Taskflow</h3>
+                    <p className="text-sm opacity-80">
+                        Add to your home screen for faster access and offline use.
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-2">
