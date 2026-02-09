@@ -185,7 +185,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
 
                         {/* Tags */}
                         <div>
-                            <div className="px-3 mb-1 text-xs font-semibold text-gray-400">TAGS</div>
+                            <div className="flex items-center justify-between px-3 mb-1 text-xs font-semibold text-gray-400">
+                                <span>TAGS</span>
+                                <Plus
+                                    size={14}
+                                    className="cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                                    onClick={() => {
+                                        const name = prompt('Enter new tag name:');
+                                        if (name && name.trim()) {
+                                            useTaskStore.getState().addTag(name.trim());
+                                        }
+                                    }}
+                                />
+                            </div>
                             <div className="space-y-0.5">
                                 {tags.map(tag => (
                                     <button

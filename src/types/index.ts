@@ -47,6 +47,7 @@ export interface TaskState {
     addTask: (title: string, parentId?: string) => void;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
+    updateTaskTitle: (id: string, title: string) => void;
     deleteTask: (id: string) => void;
     setExpanded: (id: string, expanded: boolean) => void;
     setActiveView: (view: ViewType) => void;
@@ -67,4 +68,6 @@ export interface TaskState {
     clearCompleted: () => void;
     addList: (name: string) => void;
     addTag: (name: string) => string; // returns tag ID
+    loadDefaults: () => void;
+    syncRemoteState: (data: { tasks?: Record<string, Task>, lists?: List[], tags?: Tag[], rootTaskIds?: string[] }) => void;
 }

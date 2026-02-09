@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import type { Task, TaskState, Tag, List } from '../types';
+import { firebaseService } from '../services/firebaseService';
+import { useAuthStore } from './useAuthStore';
 
 /**
  * Task Store Implementation
@@ -20,13 +22,13 @@ import type { Task, TaskState, Tag, List } from '../types';
  * - Creating a task inherits the active List/Tag context.
  */
 
-const INITIAL_TAGS: Tag[] = [
+export const DEFAULT_TAGS: Tag[] = [
     { id: 't1', name: 'work', color: 'bg-blue-100 text-blue-800' },
     { id: 't2', name: 'personal', color: 'bg-green-100 text-green-800' },
     { id: 't3', name: 'urgent', color: 'bg-red-100 text-red-800' },
 ];
 
-const INITIAL_LISTS: List[] = [
+export const DEFAULT_LISTS: List[] = [
     { id: 'inbox', name: 'Inbox', icon: '📥' },
     { id: 'personal', name: 'Personal', icon: '🏠' },
     { id: 'work', name: 'Work', icon: '💼' },
@@ -37,8 +39,8 @@ export const useTaskStore = create<TaskState>()(
         (set, get) => ({
             tasks: {},
             rootTaskIds: [],
-            tags: INITIAL_TAGS,
-            lists: INITIAL_LISTS,
+            tags: DEFAULT_TAGS, // Task 2A -> Ensure strict start state with defaults
+            lists: DEFAULT_LISTS, // Task 2A -> Ensure strict start state with defaults
             activeView: 'all',
             activeListId: null,
             activeTagId: null,
@@ -87,6 +89,30 @@ export const useTaskStore = create<TaskState>()(
                     }
                 });
 
+                // Optimistic UI update finished. Now sync to Firestore if user is logged in.
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    const finalState = get();
+                    // We need the full task object we just created.
+                    // Since we constructed 'newTask' above, we can just use it.
+                    // But if parentId was provided, we also updated the parent's subtasks.
+                    // And if it's a root task, we updated rootOrder.
+
+                    // 1. Add the task itself
+                    firebaseService.addTask(user.uid, newTask).catch(e => console.error(e));
+
+                    // 2. Update parent if exists
+                    if (parentId) {
+                        const parent = finalState.tasks[parentId];
+                        if (parent) {
+                            firebaseService.updateTask(user.uid, parentId, { subtasks: parent.subtasks }).catch(e => console.error(e));
+                        }
+                    } else {
+                        // 3. Update root order if no parent
+                        firebaseService.updateRootOrder(user.uid, finalState.rootTaskIds).catch(e => console.error(e));
+                    }
+                }
+
                 return id; // Return the new task ID
             },
 
@@ -114,6 +140,19 @@ export const useTaskStore = create<TaskState>()(
                         },
                     };
                 });
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    const finalState = get(); // Re-get state to be sure, though inside set updater we knew the result.
+                    // Actually, we can just use the Task object we modified.
+                    // But to be safe and simple, let's just grab the latest from state.
+                    const updatedTask = finalState.tasks[id];
+                    if (updatedTask) {
+                        firebaseService.updateTask(user.uid, id, {
+                            completed: updatedTask.completed,
+                            expanded: updatedTask.expanded
+                        }).catch(e => console.error(e));
+                    }
+                }
             },
 
             updateTask: (id, updates) => {
@@ -128,17 +167,70 @@ export const useTaskStore = create<TaskState>()(
                         },
                     };
                 });
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    firebaseService.updateTask(user.uid, id, updates).catch(e => console.error(e));
+                }
+            },
+
+            updateTaskTitle: (id, title) => {
+                const safe = title ?? "";
+
+                // 1. Guard for missing task
+                if (!get().tasks[id]) {
+                    console.error("[Armor] Missing task", id);
+                    return;
+                }
+
+                console.log("[Armor] Title Update ->", id, safe);
+
+                set((state) => {
+                    return {
+                        tasks: {
+                            ...state.tasks,
+                            [id]: {
+                                ...state.tasks[id],
+                                title: safe
+                            }
+                        }
+                    };
+                });
+
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    firebaseService.updateTask(user.uid, id, { title: safe }).catch(err => {
+                        console.error("[Armor] Firestore write failed", err);
+                    });
+                }
             },
 
             deleteTask: (id) => {
-                set((state) => {
-                    const taskToDelete = state.tasks[id];
-                    if (!taskToDelete) return state;
+                const state = get();
+                const taskToDelete = state.tasks[id];
+                if (!taskToDelete) return;
 
+                // 1. Identify all IDs to delete (Cascade)
+                const getDescendants = (taskId: string): string[] => {
+                    const t = state.tasks[taskId];
+                    if (!t) return [];
+                    let ids: string[] = [];
+                    t.subtasks.forEach(subId => {
+                        ids.push(subId);
+                        ids.push(...getDescendants(subId));
+                    });
+                    return ids;
+                };
+                const idsToDelete = [id, ...getDescendants(id)];
+
+                // Capture parent/root info for Firestore update
+                const parentId = taskToDelete.parentId;
+
+                // 2. Local Update
+                set((state) => {
                     const { [id]: deleted, ...remainingTasks } = state.tasks;
                     let newRootTaskIds = state.rootTaskIds;
 
-                    // Helper to recursively delete children
+                    // Helper to recursively delete children (local state)
                     const deleteChildren = (taskId: string, currentTasks: Record<string, Task>) => {
                         const task = currentTasks[taskId];
                         if (!task) return currentTasks;
@@ -171,6 +263,28 @@ export const useTaskStore = create<TaskState>()(
                         rootTaskIds: newRootTaskIds,
                     };
                 });
+
+                // 3. Firestore Sync
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    // A. Delete all tasks in subtree
+                    firebaseService.deleteMultipleTasks(user.uid, idsToDelete).catch(e => console.error(e));
+
+                    // B. Update Parent or Root
+                    if (parentId) {
+                        // We rely on the PREVIOUS state captured in `state` to find the parent.
+                        // We need to calculate the NEW subtasks list for the parent.
+                        const parent = state.tasks[parentId];
+                        if (parent) {
+                            const newSubtasks = parent.subtasks.filter(sid => sid !== id);
+                            firebaseService.updateTask(user.uid, parentId, { subtasks: newSubtasks }).catch(e => console.error(e));
+                        }
+                    } else {
+                        // Update Root Order
+                        const newRootIds = state.rootTaskIds.filter(rid => rid !== id);
+                        firebaseService.updateRootOrder(user.uid, newRootIds).catch(e => console.error(e));
+                    }
+                }
             },
 
             setExpanded: (id, expanded) => {
@@ -185,6 +299,10 @@ export const useTaskStore = create<TaskState>()(
                         },
                     };
                 });
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    firebaseService.updateTask(user.uid, id, { expanded }).catch(e => console.error(e));
+                }
             },
 
             setActiveView: (view) => set({ activeView: view, activeListId: null, activeTagId: null }),
@@ -202,30 +320,34 @@ export const useTaskStore = create<TaskState>()(
             setSearchQuery: (query) => set({ searchQuery: query }),
 
             indentTask: (id: string) => {
+                const state = get();
+                const task = state.tasks[id];
+                if (!task) return;
+
+                // logic to find previous sibling
+                let siblings: string[] = [];
+                if (task.parentId) {
+                    siblings = state.tasks[task.parentId]?.subtasks || [];
+                } else {
+                    siblings = state.rootTaskIds;
+                }
+
+                const index = siblings.indexOf(id);
+                if (index <= 0) return;
+
+                const prevSiblingId = siblings[index - 1];
+                const prevSibling = state.tasks[prevSiblingId];
+                if (!prevSibling) return;
+
+                // Capture state for sync
+                const oldParentId = task.parentId;
+                const newParentId = prevSiblingId;
+
                 set((state) => {
-                    const task = state.tasks[id];
-                    if (!task) return state;
-
-                    // logic to find previous sibling
-                    let siblings: string[] = [];
-                    if (task.parentId) {
-                        siblings = state.tasks[task.parentId]?.subtasks || [];
-                    } else {
-                        siblings = state.rootTaskIds;
-                    }
-
-                    const index = siblings.indexOf(id);
-                    if (index <= 0) return state; // Can't indent if first child
-
-                    const prevSiblingId = siblings[index - 1];
-                    const prevSibling = state.tasks[prevSiblingId];
-
-                    if (!prevSibling) return state;
-
-                    // Remove from current parent/root
                     let newTasks = { ...state.tasks };
                     let newRootIds = state.rootTaskIds;
 
+                    // Remove from current parent/root
                     if (task.parentId) {
                         newTasks[task.parentId] = {
                             ...newTasks[task.parentId],
@@ -249,20 +371,48 @@ export const useTaskStore = create<TaskState>()(
                         rootTaskIds: newRootIds
                     };
                 });
+
+                // Firestore Sync
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    const finalState = get();
+
+                    // 1. Update Task (new parentId)
+                    firebaseService.updateTask(user.uid, id, { parentId: newParentId }).catch(e => console.error(e));
+
+                    // 2. Update New Parent (new subtasks, expanded)
+                    const newParent = finalState.tasks[newParentId];
+                    if (newParent) {
+                        firebaseService.updateTask(user.uid, newParentId, {
+                            subtasks: newParent.subtasks,
+                            expanded: true
+                        }).catch(e => console.error(e));
+                    }
+
+                    // 3. Update Old Parent OR Root (subtasks removed)
+                    if (oldParentId) {
+                        const oldParent = finalState.tasks[oldParentId];
+                        if (oldParent) {
+                            firebaseService.updateTask(user.uid, oldParentId, { subtasks: oldParent.subtasks }).catch(e => console.error(e));
+                        }
+                    } else {
+                        firebaseService.updateRootOrder(user.uid, finalState.rootTaskIds).catch(e => console.error(e));
+                    }
+                }
             },
 
             outdentTask: (id: string) => {
+                const state = get();
+                const task = state.tasks[id];
+                if (!task || !task.parentId) return;
+
+                const parentId = task.parentId;
+                const parent = state.tasks[parentId];
+                if (!parent) return;
+
+                const grandParentId = parent.parentId;
+
                 set((state) => {
-                    const task = state.tasks[id];
-                    if (!task || !task.parentId) return state; // Can't outdent if root
-
-                    const parentId = task.parentId;
-                    const parent = state.tasks[parentId];
-                    if (!parent) return state;
-
-                    // Grandparent?
-                    const grandParentId = parent.parentId;
-
                     // Remove from parent
                     let newTasks = { ...state.tasks };
                     newTasks[parentId] = {
@@ -299,6 +449,31 @@ export const useTaskStore = create<TaskState>()(
                         rootTaskIds: newRootIds
                     };
                 });
+
+                // Firestore Sync
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    const finalState = get();
+
+                    // 1. Update Task (new parentId)
+                    firebaseService.updateTask(user.uid, id, { parentId: grandParentId || null }).catch(e => console.error(e));
+
+                    // 2. Update Old Parent
+                    const oldParent = finalState.tasks[parentId];
+                    if (oldParent) {
+                        firebaseService.updateTask(user.uid, parentId, { subtasks: oldParent.subtasks }).catch(e => console.error(e));
+                    }
+
+                    // 3. Update New Parent (Grandparent) OR Root
+                    if (grandParentId) {
+                        const grandParent = finalState.tasks[grandParentId];
+                        if (grandParent) {
+                            firebaseService.updateTask(user.uid, grandParentId, { subtasks: grandParent.subtasks }).catch(e => console.error(e));
+                        }
+                    } else {
+                        firebaseService.updateRootOrder(user.uid, finalState.rootTaskIds).catch(e => console.error(e));
+                    }
+                }
             },
 
             getFilteredRootTaskIds: () => {
@@ -310,7 +485,8 @@ export const useTaskStore = create<TaskState>()(
                 todayEnd.setHours(23, 59, 59, 999);
 
                 // Sequential Guards: Search -> List -> Tag -> View -> Sort
-                let filtered = rootTaskIds.filter(taskId => {
+                const safeRootIds = rootTaskIds ?? [];
+                let filtered = safeRootIds.filter(taskId => {
                     const task = tasks[taskId];
                     if (!task) return false;
 
@@ -334,22 +510,17 @@ export const useTaskStore = create<TaskState>()(
 
                     // 2. Guard: List Mode (Exclusive)
                     if (activeListId !== null) {
-                        // If we are in a list, we ONLY care if it matches the list.
-                        // We DO NOT apply View filters (Today/Upcoming etc).
                         return task.listId === activeListId;
                     }
 
                     // 3. Guard: Tag Mode (Exclusive, with hierarchy)
                     if (activeTagId !== null) {
-                        // Check if task or ANY descendant has the tag
                         const hasTagInTree = (taskId: string): boolean => {
                             const t = tasks[taskId];
                             if (!t) return false;
 
-                            // Check this task
                             if (t.tags.includes(activeTagId)) return true;
 
-                            // Check all subtasks recursively
                             return t.subtasks.some(childId => hasTagInTree(childId));
                         };
 
@@ -357,14 +528,10 @@ export const useTaskStore = create<TaskState>()(
                     }
 
                     // 4. Guard: View Mode (Only if NO list or tag active)
-                    // Apply View-specific rules (including completion)
-
                     if (activeView === 'completed') {
-                        return task.completed; // Completed view ONLY shows completed tasks.
+                        return task.completed;
                     }
 
-                    // Completion Filter (Applied inside view logic only, skipped for 'completed' view)
-                    // If showCompleted is false, hide completed tasks.
                     if (!showCompleted && task.completed) return false;
 
                     if (activeView === 'today') {
@@ -374,7 +541,6 @@ export const useTaskStore = create<TaskState>()(
                         if (!task.dueDate) return false;
                         if (task.dueDate <= todayEnd.getTime()) return false;
                     }
-                    // 'all' view passes through (after completion check)
 
                     return true;
                 });
@@ -386,9 +552,6 @@ export const useTaskStore = create<TaskState>()(
                         const taskB = tasks[b];
 
                         if (sortBy === 'created') {
-                            // Newer tasks first (assuming UUID-based IDs is approximation or we'd need created timestamp. 
-                            // Using ID string comparison is rough but strict sort requires timestamp which Task doesn't have yet.
-                            // Assuming implementation meant to rely on manual order usually.
                             return b.localeCompare(a);
                         } else if (sortBy === 'dueDate') {
                             const dateA = taskA.dueDate || Infinity;
@@ -424,7 +587,6 @@ export const useTaskStore = create<TaskState>()(
                     const newTasks = { ...state.tasks, [newId]: newTask };
 
                     if (task.parentId) {
-                        // Add as sibling in parent's subtasks array
                         const parent = state.tasks[task.parentId];
                         if (!parent) return state;
 
@@ -442,7 +604,6 @@ export const useTaskStore = create<TaskState>()(
                             },
                         };
                     } else {
-                        // Add as sibling in root tasks
                         const rootIndex = state.rootTaskIds.indexOf(taskId);
                         const newRootIds = [...state.rootTaskIds];
                         newRootIds.splice(rootIndex + 1, 0, newId);
@@ -453,6 +614,22 @@ export const useTaskStore = create<TaskState>()(
                         };
                     }
                 });
+
+                // Firestore Sync
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    const finalState = get();
+                    firebaseService.addTask(user.uid, newTask).catch(e => console.error(e));
+
+                    if (task.parentId) {
+                        const parent = finalState.tasks[task.parentId];
+                        if (parent) {
+                            firebaseService.updateTask(user.uid, task.parentId, { subtasks: parent.subtasks }).catch(e => console.error(e));
+                        }
+                    } else {
+                        firebaseService.updateRootOrder(user.uid, finalState.rootTaskIds).catch(e => console.error(e));
+                    }
+                }
 
                 return newId;
             },
@@ -468,7 +645,6 @@ export const useTaskStore = create<TaskState>()(
 
                         visible.push(id);
 
-                        // Only traverse children if expanded
                         if (task.expanded && task.subtasks.length > 0) {
                             traverse(task.subtasks);
                         }
@@ -523,7 +699,14 @@ export const useTaskStore = create<TaskState>()(
                         rootTaskIds: newRootIds.filter(id => !completedRootIds.includes(id))
                     };
                 });
+
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    const finalState = get();
+                    firebaseService.updateRootOrder(user.uid, finalState.rootTaskIds).catch(e => console.error(e));
+                }
             },
+
             addTag: (name) => {
                 const state = get();
                 const normalized = name.trim().toLowerCase();
@@ -531,7 +714,6 @@ export const useTaskStore = create<TaskState>()(
                 if (existing) return existing.id;
 
                 const id = uuidv4();
-                // Cycle through colors or random
                 const colors = [
                     'bg-blue-100 text-blue-800',
                     'bg-green-100 text-green-800',
@@ -543,77 +725,73 @@ export const useTaskStore = create<TaskState>()(
                 ];
                 const color = colors[state.tags.length % colors.length];
 
-                const newTag: Tag = { id, name: name.trim(), color }; // Store original case for display
+                const newTag: Tag = { id, name: name.trim(), color };
                 set({ tags: [...state.tags, newTag] });
+
+                const user = useAuthStore.getState().user;
+                if (user) {
+                    firebaseService.addTag(user.uid, newTag).catch(e => console.error(e));
+                }
+
                 return id;
             },
+
             addList: (name) => {
                 set((state) => {
                     const id = name.toLowerCase().replace(/\s+/g, '-');
-                    // Check duplicate
                     if (state.lists.find(l => l.id === id)) return state;
 
                     const newList: List = { id, name, icon: '📝' };
+
+                    const user = useAuthStore.getState().user;
+                    if (user) {
+                        firebaseService.addList(user.uid, newList).catch(e => console.error(e));
+                    }
+
                     return { lists: [...state.lists, newList] };
                 });
+            },
+
+            loadDefaults: () => {
+                set({
+                    lists: DEFAULT_LISTS,
+                    tags: DEFAULT_TAGS,
+                    tasks: {},
+                    rootTaskIds: []
+                });
+            },
+
+            syncRemoteState: (data) => {
+                set((state) => ({
+                    ...state,
+                    tasks: data.tasks !== undefined ? data.tasks : state.tasks,
+                    rootTaskIds: data.rootTaskIds !== undefined ? data.rootTaskIds : state.rootTaskIds,
+                    lists: data.lists !== undefined ? data.lists : state.lists,
+                    tags: data.tags !== undefined ? data.tags : state.tags,
+                }));
             },
         }),
         {
             name: 'taskflow-storage',
             onRehydrateStorage: () => (state) => {
-                // Validate and sanitize rehydrated state
                 if (!state) return;
-
                 try {
-                    // Ensure tasks is a valid object
                     if (!state.tasks || typeof state.tasks !== 'object') {
                         state.tasks = {};
                     }
-
-                    // Ensure rootTaskIds is a valid array
                     if (!Array.isArray(state.rootTaskIds)) {
                         state.rootTaskIds = [];
                     }
-
-                    // Clean up any invalid task references in rootTaskIds
-                    state.rootTaskIds = state.rootTaskIds.filter(id => state.tasks[id]);
-
-                    // Clean up any invalid subtask references
-                    Object.keys(state.tasks).forEach(taskId => {
-                        const task = state.tasks[taskId];
-                        if (task.subtasks) {
-                            task.subtasks = task.subtasks.filter(subId => state.tasks[subId]);
-                        }
-                    });
-
-                    // Validate Active Context Persistence
-                    // If activeListId or activeTagId points to a missing item, reset to default View (All).
-                    if (state.activeListId && !state.lists.find(l => l.id === state.activeListId)) {
-                        state.activeListId = null;
-                        state.activeView = 'all';
+                    if (!Array.isArray(state.tags)) {
+                        state.tags = DEFAULT_TAGS;
                     }
-                    if (state.activeTagId && !state.tags.find(t => t.id === state.activeTagId)) {
-                        state.activeTagId = null;
-                        state.activeView = 'all';
+                    if (!Array.isArray(state.lists)) {
+                        state.lists = DEFAULT_LISTS;
                     }
-
-                    // Ensure strict mutual exclusivity is respected on reload (defensive)
-                    if (state.activeListId) {
-                        state.activeTagId = null; // List takes precedence or just ensure single mode
-                    } else if (state.activeTagId) {
-                        state.activeListId = null;
-                    }
-
-                } catch (error) {
-                    console.error('Error rehydrating state, using defaults:', error);
-                    // Reset to safe defaults on error
-                    state.tasks = {};
-                    state.rootTaskIds = [];
-                    state.activeView = 'all';
-                    state.activeListId = null;
-                    state.activeTagId = null;
+                } catch (e) {
+                    console.error('Error rehydrating storage:', e);
                 }
-            },
+            }
         }
     )
 );

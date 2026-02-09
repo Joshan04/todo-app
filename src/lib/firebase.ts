@@ -1,15 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-// import { getFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
 
 // TODO: Replace with your actual Firebase config or use environment variables
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
+    apiKey: "AIzaSyC9ZnhCzBXhLBTC2gzD_4Iw75k019FLzx0",
+    authDomain: "todo-app-a9ae5.firebaseapp.com",
+    projectId: "todo-app-a9ae5",
+    storageBucket: "todo-app-a9ae5.firebasestorage.app",
+    messagingSenderId: "220252419615",
+    appId: "1:220252419615:web:7d5f209910aee9c8e6472a"
 };
 
 // Initialize Firebase
@@ -18,8 +18,10 @@ const app = initializeApp(firebaseConfig);
 // Initialize Auth
 export const auth = getAuth(app);
 
-// Initialize Firestore (Disabled for Phase 1)
-// export const db = getFirestore(app);
+// Initialize Firestore
+export const db = getFirestore(app);
 
-// Enable Offline Persistence (Disabled for Phase 1)
-// enableMultiTabIndexedDbPersistence(db).catch((err) => { ... });
+// Enable Offline Persistence
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
+    console.warn('Persistence error:', err.code);
+});

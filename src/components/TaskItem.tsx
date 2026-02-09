@@ -6,6 +6,7 @@ import { DatePicker } from './DatePicker';
 import { ListSelector } from './ListSelector';
 import { TagSelector } from './TagSelector';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
+import type { Task } from '../types';
 
 
 interface TaskItemProps {
@@ -23,12 +24,25 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         addTask,
         tags: availableTags,
         selectedTaskId,
-        selectTask
+        selectTask,
+        updateTaskTitle
     } = useTaskStore();
 
-    const task = tasks[taskId];
+    const rawTask = tasks[taskId];
+    // Safe fallback for hooks to prevent crash if task is undefined
+    const task = rawTask ?? {
+        id: taskId,
+        title: '',
+        completed: false,
+        expanded: false,
+        tags: [],
+        subtasks: [],
+        listId: '',
+        notes: '',
+        dueDate: null
+    } as Task;
+
     const [isEditing, setIsEditing] = useState(false);
-    const [originalTitle, setOriginalTitle] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -42,7 +56,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     // Initialize draft when opening notes
     useEffect(() => {
         if (showNotes) {
-            setNoteDraft(task.notes || '');
+            setNoteDraft(task.notes ?? '');
             // Auto-focus next tick
             setTimeout(() => {
                 if (notesRef.current) {
@@ -60,7 +74,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         }
     }, [isEditing]);
 
-    if (!task) return null;
+    if (!rawTask) {
+        // console.warn("[Armor] task not found in store, skipping render", taskId);
+        return null;
+    }
 
     const handleToggleExpand = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -101,8 +118,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
         } else if (e.key === 'Escape') {
             e.preventDefault();
-            // Restore original title and exit edit mode
-            updateTask(taskId, { title: originalTitle });
             setIsEditing(false);
 
         } else if (e.key === 'Backspace' && task.title === '') {
@@ -169,14 +184,14 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
         return format(date, 'MMM d');
     };
 
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const hasSubtasks = (task.subtasks?.length ?? 0) > 0;
 
     // Tag rendering helper
     const renderTags = () => {
         if (!task.tags || task.tags.length === 0) return null;
         return (
             <div className="flex items-center gap-1.5 ml-2">
-                {task.tags.map(tagId => {
+                {(task.tags ?? []).map(tagId => {
                     const tag = availableTags.find(t => t.id === tagId);
                     if (!tag) return null;
                     return (
@@ -247,8 +262,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         {isEditing ? (
                             <input
                                 ref={inputRef}
-                                value={task.title}
-                                onChange={(e) => updateTask(taskId, { title: e.target.value })}
+                                value={task.title ?? ""}
+                                onChange={(e) => updateTaskTitle(taskId, e.target.value)}
                                 onBlur={() => setIsEditing(false)}
                                 onKeyDown={handleKeyDown}
                                 onClick={(e) => e.stopPropagation()} // Prevent row click
@@ -267,7 +282,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                     // Actually, let's allow row click to handle selection. Title click is specific action.
                                     // If title click triggers edit, it shouldn't toggle selection?
                                     // Let's keep title edit logic but stop propagation so it doesn't trigger row selection toggle if desired.
-                                    setOriginalTitle(task.title);
                                     setIsEditing(true);
                                 }}
                                 className={clsx(
@@ -295,7 +309,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         {hasSubtasks && (
                             <span
                                 className=""
-                                aria-label={`${task.subtasks.filter(sid => tasks[sid]?.completed).length} of ${task.subtasks.length} subtasks completed`}
+                                aria-label={`${(task.subtasks ?? []).filter(sid => tasks[sid]?.completed).length} of ${(task.subtasks ?? []).length} subtasks completed`}
                             >
                                 {task.subtasks.filter(sid => tasks[sid]?.completed).length}/{task.subtasks.length} subtasks
                             </span>
@@ -369,16 +383,16 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 }}
                                 className={clsx(
                                     "flex items-center gap-1 rounded text-[11px] hover:text-gray-600 dark:hover:text-gray-300 transition-colors",
-                                    task.notes
+                                    (task.notes ?? "")
                                         ? "text-gray-500 dark:text-gray-400"
                                         : (isSelected || showNotes)
                                             ? "text-gray-400"
                                             : "text-gray-400 opacity-0 group-hover/item:opacity-100"
                                 )}
-                                aria-label={task.notes ? "Edit notes" : "Add notes"}
+                                aria-label={(task.notes ?? "") ? "Edit notes" : "Add notes"}
                             >
                                 <AlignLeft size={10} />
-                                {(!task.notes && !showNotes) && <span>Add note</span>}
+                                {(!(task.notes ?? "") && !showNotes) && <span>Add note</span>}
                             </button>
                         </div>
 
@@ -400,8 +414,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         const titleSpan = newTaskElement?.querySelector('.task-title') as HTMLElement;
                                         if (titleSpan) {
                                             titleSpan.click(); // Enters edit mode
+                                        } else {
+                                            console.warn("[Armor] Could not find new subtask element to focus");
                                         }
-                                    }, 50);
+                                    }, 100);
                                 }}
                                 className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
                                 title="Add subtask"
@@ -451,7 +467,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         e.stopPropagation();
                                         setShowNotes(false);
                                         // Reset to original on cancel? Req says "collapses notes without saving"
-                                        setNoteDraft(task.notes || '');
+                                        setNoteDraft(task.notes ?? '');
                                     }
                                     // Allow Enter for newlines
                                 }}
@@ -476,7 +492,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             {/* Recursive Children */}
             {task.expanded && hasSubtasks && (
                 <div className="">
-                    {task.subtasks.map(childId => {
+                    {(task.subtasks ?? []).map(childId => {
                         // Apply search filtering to children
                         // Use a selector/memoized approach would be better but direct access is fine for now
                         const searchQuery = useTaskStore.getState().searchQuery.toLowerCase();

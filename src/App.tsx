@@ -1,5 +1,6 @@
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
+import InstallBanner from './components/InstallBanner';
 import React, { useState } from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -33,8 +34,13 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
+import { useFirestoreSync } from './hooks/useFirestoreSync';
+
 function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Enable Firestore Sync
+  useFirestoreSync();
 
   return (
     <ErrorBoundary>
@@ -47,6 +53,7 @@ function App() {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
       </div>
+      <InstallBanner />
     </ErrorBoundary>
   );
 }
