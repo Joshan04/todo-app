@@ -102,8 +102,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     };
 
     const handleRowClick = () => {
-        // Only for mobile
-        if (window.innerWidth < 768) {
+        // Allow selection on mobile OR touch devices (tablets)
+        const isTouch = window.matchMedia('(hover: none)').matches;
+        if (window.innerWidth < 768 || isTouch) {
             // If editing title, don't toggle selection
             if (isEditing) return;
 
