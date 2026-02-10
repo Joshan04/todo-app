@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreHorizontal } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List } from 'lucide-react';
 import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
 import { DatePicker } from './DatePicker';
@@ -79,6 +79,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             inputRef.current.focus();
         }
     }, [isEditing]);
+
+    const [menuOpen, setMenuOpen] = useState(false);
+    useEffect(() => {
+        const close = () => setMenuOpen(false);
+        if (menuOpen) window.addEventListener('click', close);
+        return () => window.removeEventListener('click', close);
+    }, [menuOpen]);
 
     // Auto-edit newly created subtasks
     useEffect(() => {
@@ -320,7 +327,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             // Combined Visibility Logic:
                             // Always show if: 1. has metadata AND (desktop hover OR mobile selected)
                             // If NO metadata: hidden unless (desktop hover OR mobile selected)
-                            (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !task.notes) &&
+                            (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !(task.notes ?? "")) &&
                             (isSelected ? "flex" : "hidden group-hover/item:flex")
                         )}>
                         {/* Subtask progress */}
@@ -334,9 +341,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         )}
 
 
-                        <ListSelector taskId={taskId} isVisible={isSelected} />
+                        <div id={`list-selector-wrapper-${taskId}`} className="relative">
+                            <ListSelector taskId={taskId} isVisible={isSelected} />
+                        </div>
 
-                        <TagSelector taskId={taskId} isVisible={isSelected} />
+                        <div id={`tag-selector-wrapper-${taskId}`} className="relative">
+                            <TagSelector taskId={taskId} isVisible={isSelected} />
+                        </div>
 
                         {renderTags()}
 
@@ -369,18 +380,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 )}
                             </div>
                         ) : (
-                            <div className={clsx("relative transition-opacity", (isSelected || showDatePicker) ? "opacity-100" : "opacity-0 group-hover/item:opacity-100")}>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowDatePicker(true);
-                                    }}
-                                    className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
-                                >
-                                    <Calendar size={10} />
-                                    <span>Add date</span>
-                                </button>
-                                {showDatePicker && (
+                            // Only show DatePicker when active (triggered via menu)
+                            showDatePicker ? (
+                                <div className="relative">
                                     <DatePicker
                                         currentDate={null}
                                         onSelect={(date) => {
@@ -389,76 +391,121 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         }}
                                         onClose={() => setShowDatePicker(false)}
                                     />
-                                )}
+                                </div>
+                            ) : null
+                        )}
+                        {/* Notes Icon (Only if notes exist) */}
+                        {(task.notes ?? "") && (
+                            <div className="relative">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowNotes(!showNotes);
+                                    }}
+                                    className="flex items-center gap-1 rounded text-[11px] hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-gray-500 dark:text-gray-400"
+                                    aria-label="Edit notes"
+                                >
+                                    <AlignLeft size={10} />
+                                </button>
                             </div>
                         )}
-                        {/* Notes Toggle */}
-                        <div className="relative">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowNotes(!showNotes);
-                                }}
-                                className={clsx(
-                                    "flex items-center gap-1 rounded text-[11px] hover:text-gray-600 dark:hover:text-gray-300 transition-colors",
-                                    (task.notes ?? "")
-                                        ? "text-gray-500 dark:text-gray-400"
-                                        : (isSelected || showNotes)
-                                            ? "text-gray-400"
-                                            : "text-gray-400 opacity-0 group-hover/item:opacity-100"
-                                )}
-                                aria-label={(task.notes ?? "") ? "Edit notes" : "Add notes"}
-                            >
-                                <AlignLeft size={10} />
-                                {(!(task.notes ?? "") && !showNotes) && <span>Add note</span>}
-                            </button>
-                        </div>
 
                         {/* Action Buttons */}
                         <div className={clsx(
                             "flex items-center gap-2 ml-auto",
                             isSelected ? "opacity-100" : "opacity-0 md:group-hover/item:opacity-100"
                         )}>
-                            {/* Add Subtask */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newSubtaskId = addTask('', taskId); // Add with current task as parent
-                                    setExpanded(taskId, true); // Expand to show new subtask
-                                    if (newSubtaskId) {
-                                        setAutoEditTask(newSubtaskId); // Mark for auto-editing
-                                    }
-                                }}
-                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300"
-                                title="Add subtask"
-                            >
-                                <Plus size={14} />
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMenuOpen(!menuOpen);
+                                    }}
+                                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    aria-label="More actions"
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
 
-                            {/* Delete Task */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setConfirmOpen(true);
-                                }}
-                                className="flex items-center gap-1 text-gray-400 hover:text-red-600 text-[11px] dark:hover:text-red-400"
-                                title="Delete task"
-                            >
-                                <Trash2 size={14} />
-                            </button>
+                                {menuOpen && (
+                                    <div
+                                        className="absolute right-0 mt-1 w-48 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg z-50 py-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                const newSubtaskId = addTask('', taskId);
+                                                setExpanded(taskId, true);
+                                                if (newSubtaskId) setAutoEditTask(newSubtaskId);
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                        >
+                                            <Plus size={14} className="opacity-70" />
+                                            <span>Add subtask</span>
+                                        </button>
 
-                            {/* More Menu (optional, for future actions) */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Future: open context menu
-                                }}
-                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-[11px] dark:hover:text-gray-300 opacity-0"
-                                title="More actions"
-                                disabled
-                            >
-                                <MoreHorizontal size={14} />
-                            </button>
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setShowDatePicker(true);
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                        >
+                                            <Calendar size={14} className="opacity-70" />
+                                            <span>Add date</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setShowNotes(true);
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                        >
+                                            <AlignLeft size={14} className="opacity-70" />
+                                            <span>Add note</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                const el = document.getElementById(`list-selector-wrapper-${taskId}`);
+                                                el?.querySelector('button')?.click();
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                        >
+                                            <List size={14} className="opacity-70" />
+                                            <span>Move to list</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                const el = document.getElementById(`tag-selector-wrapper-${taskId}`);
+                                                el?.querySelector('button')?.click();
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                        >
+                                            <Hash size={14} className="opacity-70" />
+                                            <span>Tags</span>
+                                        </button>
+
+                                        <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setConfirmOpen(true);
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                        >
+                                            <Trash2 size={14} className="opacity-70" />
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
