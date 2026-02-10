@@ -18,6 +18,7 @@ export interface Task {
     completed: boolean;
     expanded: boolean;
     dueDate?: number | null; // timestamp
+    dueTime?: string;
     tags: string[]; // tag IDs
     subtasks: string[]; // IDs of children
     parentId?: string | null;

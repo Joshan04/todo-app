@@ -8,6 +8,11 @@ import { TagSelector } from './TagSelector';
 import ConfirmModal from './ConfirmModal';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import type { Task } from '../types';
+import {
+    scheduleReminder,
+    cancelReminder,
+    requestNotificationPermission,
+} from "../lib/reminderManager";
 
 
 interface TaskItemProps {
@@ -97,6 +102,39 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             }, 100);
         }
     }, [autoEditTaskId, taskId, setEditingTask, setAutoEditTask]);
+
+    // Helper to calculate exact due time
+    const getDueAt = (t: Task): number => {
+        if (!t.dueDate) return 0;
+        const date = new Date(t.dueDate);
+        if (t.dueTime) {
+            const [hours, minutes] = t.dueTime.split(':').map(Number);
+            date.setHours(hours, minutes, 0, 0);
+        } else {
+            // Default to 09:00 local time
+            date.setHours(9, 0, 0, 0);
+        }
+        return date.getTime();
+    };
+
+    // Reminders Hook
+    useEffect(() => {
+        if (!task.dueDate || task.completed) {
+            cancelReminder(task.id);
+            return;
+        }
+
+        const dueAt = getDueAt(task);
+        if (dueAt > Date.now()) {
+            requestNotificationPermission();
+            scheduleReminder(task.id, task.title, dueAt);
+        } else {
+            // If time passed, ensure no pending reminder
+            cancelReminder(task.id);
+        }
+
+        return () => cancelReminder(task.id);
+    }, [task.dueDate, task.dueTime, task.completed, task.title, task.id]);
 
     if (!rawTask) {
         // console.warn("[Armor] task not found in store, skipping render", taskId);
@@ -327,7 +365,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             // Combined Visibility Logic:
                             // Always show if: 1. has metadata AND (desktop hover OR mobile selected)
                             // If NO metadata: hidden unless (desktop hover OR mobile selected)
-                            (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !(task.notes ?? "")) &&
+                            (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !(task.notes ?? "") && !showDatePicker && !showNotes) &&
                             (isSelected ? "flex" : "hidden group-hover/item:flex")
                         )}>
                         {/* Subtask progress */}
@@ -366,31 +404,86 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                     )}
                                 >
                                     <Calendar size={10} />
-                                    <span>{formatDueDate(task.dueDate)}</span>
+                                    <span>
+                                        {formatDueDate(task.dueDate)}
+                                        {task.dueTime && <span className="ml-1 opacity-75 text-[10px]">@{task.dueTime}</span>}
+                                    </span>
                                 </button>
                                 {showDatePicker && (
-                                    <DatePicker
-                                        currentDate={task.dueDate}
-                                        onSelect={(date) => {
-                                            updateTask(taskId, { dueDate: date });
-                                            setShowDatePicker(false);
-                                        }}
-                                        onClose={() => setShowDatePicker(false)}
-                                    />
+                                    <div
+                                        className="absolute top-full left-0 z-50 mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col w-48"
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="[&>div]:!static [&>div]:!shadow-none [&>div]:!border-none [&>div]:!w-full [&>div]:!mt-0">
+                                            <DatePicker
+                                                currentDate={task.dueDate}
+                                                onSelect={(date) => {
+                                                    updateTask(taskId, { dueDate: date });
+                                                    // Don't close immediately if we want to allow time pick? 
+                                                    // User flow: Pick date -> Pick time. 
+                                                    // Existing DatePicker closes on select (except clear).
+                                                    // If we want to support time, maybe we should keep it open?
+                                                    // But DatePicker props don't allow "stay open".
+                                                    // We can just reopen it? Or rely on user to re-open?
+                                                    // No, "Click 'Add date' -> DatePicker opens immediately."
+                                                    // Let's modify behavior: If they pick date, keep open?
+                                                    // We can't controlled 'keep open' easily without modifying DatePicker logic which calls onClose.
+                                                    // However, onClose prop is ours!
+                                                    // We can IGNORE onClose if the click was inside our wrapper?
+                                                    // But DatePicker calls onClose after selection.
+                                                    // So if we ignore it, it stays open.
+                                                    // But we should close eventually.
+                                                }}
+                                                onClose={() => setShowDatePicker(false)}
+                                            />
+                                        </div>
+
+                                        <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800/50">
+                                            <label className="text-[10px] text-gray-500 font-medium block mb-1 px-1">
+                                                Time (optional)
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={task.dueTime || ''}
+                                                onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
+                                                className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         ) : (
                             // Only show DatePicker when active (triggered via menu)
                             showDatePicker ? (
                                 <div className="relative">
-                                    <DatePicker
-                                        currentDate={null}
-                                        onSelect={(date) => {
-                                            updateTask(taskId, { dueDate: date });
-                                            setShowDatePicker(false);
-                                        }}
-                                        onClose={() => setShowDatePicker(false)}
-                                    />
+                                    <div
+                                        className="absolute top-full left-0 z-50 mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col w-48"
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="[&>div]:!static [&>div]:!shadow-none [&>div]:!border-none [&>div]:!w-full [&>div]:!mt-0">
+                                            <DatePicker
+                                                currentDate={null}
+                                                onSelect={(date) => {
+                                                    updateTask(taskId, { dueDate: date });
+                                                    // setShowDatePicker(false); 
+                                                }}
+                                                onClose={() => setShowDatePicker(false)}
+                                            />
+                                        </div>
+                                        <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800/50">
+                                            <label className="text-[10px] text-gray-500 font-medium block mb-1 px-1">
+                                                Time (optional)
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={task.dueTime || ''}
+                                                onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
+                                                className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             ) : null
                         )}
@@ -545,28 +638,30 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             </div>
 
             {/* Recursive Children */}
-            {task.expanded && hasSubtasks && (
-                <div className="">
-                    {(task.subtasks ?? []).map(childId => {
-                        // Apply search filtering to children
-                        // Use a selector/memoized approach would be better but direct access is fine for now
-                        const searchQuery = useTaskStore.getState().searchQuery.toLowerCase();
-                        if (searchQuery) {
-                            // Helper to check match
-                            const hasMatch = (tId: string): boolean => {
-                                const t = useTaskStore.getState().tasks[tId];
-                                if (!t) return false;
-                                if (t.title.toLowerCase().includes(searchQuery)) return true;
-                                return t.subtasks.some(cid => hasMatch(cid));
-                            };
+            {
+                task.expanded && hasSubtasks && (
+                    <div className="">
+                        {(task.subtasks ?? []).map(childId => {
+                            // Apply search filtering to children
+                            // Use a selector/memoized approach would be better but direct access is fine for now
+                            const searchQuery = useTaskStore.getState().searchQuery.toLowerCase();
+                            if (searchQuery) {
+                                // Helper to check match
+                                const hasMatch = (tId: string): boolean => {
+                                    const t = useTaskStore.getState().tasks[tId];
+                                    if (!t) return false;
+                                    if (t.title.toLowerCase().includes(searchQuery)) return true;
+                                    return t.subtasks.some(cid => hasMatch(cid));
+                                };
 
-                            if (!hasMatch(childId)) return null;
-                        }
+                                if (!hasMatch(childId)) return null;
+                            }
 
-                        return <TaskItem key={childId} taskId={childId} depth={depth + 1} />;
-                    })}
-                </div>
-            )}
+                            return <TaskItem key={childId} taskId={childId} depth={depth + 1} />;
+                        })}
+                    </div>
+                )
+            }
 
             {/* Confirm Delete Modal */}
             <ConfirmModal
@@ -576,11 +671,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                 confirmText="Delete"
                 cancelText="Cancel"
                 onConfirm={() => {
+                    cancelReminder(taskId);
                     deleteTask(taskId);
                     setConfirmOpen(false);
                 }}
                 onCancel={() => setConfirmOpen(false)}
             />
-        </li>
+        </li >
     );
 };
