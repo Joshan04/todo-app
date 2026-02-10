@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from "react-dom";
 import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List } from 'lucide-react';
 import clsx from 'clsx';
@@ -64,13 +64,27 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const dateTriggerRef = useRef<HTMLButtonElement | HTMLDivElement>(null);
     const [datePickerPos, setDatePickerPos] = useState<{ top: number, left: number } | null>(null);
 
-    useEffect(() => {
-        if (showDatePicker && dateTriggerRef.current) {
-            const rect = dateTriggerRef.current.getBoundingClientRect();
-            setDatePickerPos({
-                top: rect.bottom + 8,
-                left: Math.min(rect.left, window.innerWidth - 260) // 260px = w-64 (256px) + margin safety
-            });
+    const datePickerRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (showDatePicker && dateTriggerRef.current && datePickerRef.current) {
+            const triggerRect = dateTriggerRef.current.getBoundingClientRect();
+            const pickerRect = datePickerRef.current.getBoundingClientRect();
+
+            let left = triggerRect.left;
+            let top = triggerRect.bottom + 8;
+
+            // Prevent right overflow
+            if (left + pickerRect.width > window.innerWidth) {
+                left = window.innerWidth - pickerRect.width - 8;
+            }
+
+            // Prevent left overflow
+            if (left < 8) {
+                left = 8;
+            }
+
+            setDatePickerPos({ top, left });
         }
     }, [showDatePicker]);
 
@@ -618,13 +632,14 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                 }}
                 onCancel={() => setConfirmOpen(false)}
             />
-            {/* Unified DatePicker Portal */}
-            {showDatePicker && datePickerPos && createPortal(
+            {showDatePicker && createPortal(
                 <div
+                    ref={datePickerRef}
                     className="fixed z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
                     style={{
-                        top: datePickerPos.top,
-                        left: datePickerPos.left
+                        top: datePickerPos?.top ?? 0,
+                        left: datePickerPos?.left ?? 0,
+                        visibility: datePickerPos ? 'visible' : 'hidden'
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
