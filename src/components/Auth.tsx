@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { Loader2 } from 'lucide-react';
 
@@ -23,10 +23,36 @@ export function Auth() {
             }
         } catch (err: any) {
             console.error(err);
+
+            if (isLogin) {
+                // Phase 1 Strict Logic: Check providers on specific errors
+                if (
+                    err.code === 'auth/account-exists-with-different-credential' ||
+                    err.code === 'auth/user-not-found' ||
+                    err.code === 'auth/wrong-password' ||
+                    err.code === 'auth/invalid-credential'
+                ) {
+                    try {
+                        const methods = await fetchSignInMethodsForEmail(auth, email);
+                        if (methods && methods.includes("google.com")) {
+                            setError("This account was created with Google. Please continue with Google.");
+                            setLoading(false); // Stop loader as we are returning
+                            return;
+                        }
+                    } catch (fetchErr) {
+                        // Fallback to standard error on fetch failure
+                    }
+                }
+            }
+
+            // Standard Error Message Logic (Login Fallback + Signup)
             let msg = 'An error occurred';
             if (err.code === 'auth/invalid-credential') msg = 'Invalid email or password';
+            if (err.code === 'auth/user-not-found') msg = 'Invalid email or password';
+            if (err.code === 'auth/wrong-password') msg = 'Invalid email or password';
             if (err.code === 'auth/email-already-in-use') msg = 'Email already in use';
             if (err.code === 'auth/weak-password') msg = 'Password should be at least 6 characters';
+
             setError(msg);
         } finally {
             setLoading(false);

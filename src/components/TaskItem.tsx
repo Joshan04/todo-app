@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from "react-dom";
 import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List } from 'lucide-react';
 import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
@@ -60,6 +61,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const [noteDraft, setNoteDraft] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
     const notesRef = useRef<HTMLTextAreaElement>(null);
+    const dateTriggerRef = useRef<HTMLButtonElement | HTMLDivElement>(null);
+    const [datePickerPos, setDatePickerPos] = useState<{ top: number, left: number } | null>(null);
+
+    useEffect(() => {
+        if (showDatePicker && dateTriggerRef.current) {
+            const rect = dateTriggerRef.current.getBoundingClientRect();
+            setDatePickerPos({
+                top: rect.bottom + 8,
+                left: Math.min(rect.left, window.innerWidth - 260) // 260px = w-64 (256px) + margin safety
+            });
+        }
+    }, [showDatePicker]);
 
     const isSelected = selectedTaskId === taskId;
     const isEditing = editingTaskId === taskId;
@@ -392,6 +405,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         {task.dueDate ? (
                             <div className="relative">
                                 <button
+                                    ref={dateTriggerRef as any}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setShowDatePicker(!showDatePicker);
@@ -409,83 +423,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         {task.dueTime && <span className="ml-1 opacity-75 text-[10px]">@{task.dueTime}</span>}
                                     </span>
                                 </button>
-                                {showDatePicker && (
-                                    <div
-                                        className="absolute top-full left-0 mt-2 z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="[&>div]:!static [&>div]:!shadow-none [&>div]:!border-none [&>div]:!w-full [&>div]:!mt-0">
-                                            <DatePicker
-                                                currentDate={task.dueDate}
-                                                onSelect={(date) => {
-                                                    updateTask(taskId, { dueDate: date });
-                                                    // Don't close immediately if we want to allow time pick? 
-                                                    // User flow: Pick date -> Pick time. 
-                                                    // Existing DatePicker closes on select (except clear).
-                                                    // If we want to support time, maybe we should keep it open?
-                                                    // But DatePicker props don't allow "stay open".
-                                                    // We can just reopen it? Or rely on user to re-open?
-                                                    // No, "Click 'Add date' -> DatePicker opens immediately."
-                                                    // Let's modify behavior: If they pick date, keep open?
-                                                    // We can't controlled 'keep open' easily without modifying DatePicker logic which calls onClose.
-                                                    // However, onClose prop is ours!
-                                                    // We can IGNORE onClose if the click was inside our wrapper?
-                                                    // But DatePicker calls onClose after selection.
-                                                    // So if we ignore it, it stays open.
-                                                    // But we should close eventually.
-                                                }}
-                                                onClose={() => setShowDatePicker(false)}
-                                            />
-                                        </div>
-
-                                        <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800/50">
-                                            <label className="text-[10px] text-gray-500 font-medium block mb-1 px-1">
-                                                Time (optional)
-                                            </label>
-                                            <input
-                                                type="time"
-                                                value={task.dueTime || ''}
-                                                onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
-                                                className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             // Only show DatePicker when active (triggered via menu)
-                            showDatePicker ? (
-                                <div className="relative">
-                                    <div
-                                        className="absolute top-full left-0 mt-2 z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="[&>div]:!static [&>div]:!shadow-none [&>div]:!border-none [&>div]:!w-full [&>div]:!mt-0">
-                                            <DatePicker
-                                                currentDate={null}
-                                                onSelect={(date) => {
-                                                    updateTask(taskId, { dueDate: date });
-                                                    // setShowDatePicker(false); 
-                                                }}
-                                                onClose={() => setShowDatePicker(false)}
-                                            />
-                                        </div>
-                                        <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800/50">
-                                            <label className="text-[10px] text-gray-500 font-medium block mb-1 px-1">
-                                                Time (optional)
-                                            </label>
-                                            <input
-                                                type="time"
-                                                value={task.dueTime || ''}
-                                                onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
-                                                className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : null
+                            <div ref={dateTriggerRef as any} className="w-0 h-0" />
                         )}
                         {/* Notes Icon (Only if notes exist) */}
                         {(task.notes ?? "") && (
@@ -677,6 +618,40 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                 }}
                 onCancel={() => setConfirmOpen(false)}
             />
+            {/* Unified DatePicker Portal */}
+            {showDatePicker && datePickerPos && createPortal(
+                <div
+                    className="fixed z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
+                    style={{
+                        top: datePickerPos.top,
+                        left: datePickerPos.left
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="[&>div]:!static [&>div]:!shadow-none [&>div]:!border-none [&>div]:!w-full [&>div]:!mt-0">
+                        <DatePicker
+                            currentDate={task.dueDate}
+                            onSelect={(date) => {
+                                updateTask(taskId, { dueDate: date });
+                            }}
+                            onClose={() => setShowDatePicker(false)}
+                        />
+                    </div>
+                    <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800/50">
+                        <label className="text-[10px] text-gray-500 font-medium block mb-1 px-1">
+                            Time (optional)
+                        </label>
+                        <input
+                            type="time"
+                            value={task.dueTime || ''}
+                            onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
+                            className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
         </li >
     );
 };
