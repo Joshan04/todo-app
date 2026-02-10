@@ -74,14 +74,15 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             let left = triggerRect.left;
             let top = triggerRect.bottom + 6;
 
-            // Prevent right overflow
-            if (left + pickerRect.width > window.innerWidth - 8) {
-                left = window.innerWidth - pickerRect.width - 8;
+            const padding = 8;
+            const width = pickerRect.width;
+
+            if (left + width > window.innerWidth - padding) {
+                left = window.innerWidth - width - padding;
             }
 
-            // Prevent left overflow
-            if (left < 8) {
-                left = 8;
+            if (left < padding) {
+                left = padding;
             }
 
             setDatePickerPos({ top, left });
