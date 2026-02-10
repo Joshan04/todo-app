@@ -411,7 +411,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 </button>
                                 {showDatePicker && (
                                     <div
-                                        className="absolute top-full left-0 z-50 mt-1 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
+                                        className="absolute top-full left-0 mt-2 z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
                                         onMouseDown={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
                                     >
@@ -458,7 +458,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             showDatePicker ? (
                                 <div className="relative">
                                     <div
-                                        className="absolute top-full left-0 z-50 mt-1 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
+                                        className="absolute top-full left-0 mt-2 z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
                                         onMouseDown={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
                                     >
