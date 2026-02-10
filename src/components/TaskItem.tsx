@@ -72,10 +72,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             const pickerRect = datePickerRef.current.getBoundingClientRect();
 
             let left = triggerRect.left;
-            let top = triggerRect.bottom + 8;
+            let top = triggerRect.bottom + 6;
 
             // Prevent right overflow
-            if (left + pickerRect.width > window.innerWidth) {
+            if (left + pickerRect.width > window.innerWidth - 8) {
                 left = window.innerWidth - pickerRect.width - 8;
             }
 
@@ -635,11 +635,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             {showDatePicker && createPortal(
                 <div
                     ref={datePickerRef}
-                    className="fixed z-50 w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
+                    className="fixed w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
                     style={{
                         top: datePickerPos?.top ?? 0,
                         left: datePickerPos?.left ?? 0,
-                        visibility: datePickerPos ? 'visible' : 'hidden'
+                        visibility: datePickerPos ? 'visible' : 'hidden',
+                        zIndex: 9999
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
