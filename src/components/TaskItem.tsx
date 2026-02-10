@@ -411,7 +411,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 </button>
                                 {showDatePicker && (
                                     <div
-                                        className="absolute top-full left-0 z-50 mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col w-72 md:w-48 max-w-[calc(100vw-2rem)]"
+                                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 mt-0 md:absolute md:top-full md:left-0 md:translate-x-0 md:translate-y-0 md:mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col w-72 md:w-48 max-w-[calc(100vw-2rem)]"
                                         onMouseDown={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
                                     >
@@ -458,7 +458,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                             showDatePicker ? (
                                 <div className="relative">
                                     <div
-                                        className="absolute top-full left-0 z-50 mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col w-72 md:w-48 max-w-[calc(100vw-2rem)]"
+                                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 mt-0 md:absolute md:top-full md:left-0 md:translate-x-0 md:translate-y-0 md:mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col w-72 md:w-48 max-w-[calc(100vw-2rem)]"
                                         onMouseDown={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
                                     >
