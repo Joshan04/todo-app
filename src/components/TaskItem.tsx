@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from "react-dom";
-import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List, X, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
 import { DatePicker } from './DatePicker';
@@ -62,35 +62,51 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const notesRef = useRef<HTMLTextAreaElement>(null);
     const dateTriggerRef = useRef<HTMLButtonElement | HTMLDivElement>(null);
-    const [datePickerPos, setDatePickerPos] = useState<{ top: number, left: number } | null>(null);
-
+    const menuButtonRef = useRef<HTMLButtonElement>(null);
     const datePickerRef = useRef<HTMLDivElement>(null);
+    const [lockedPosition, setLockedPosition] = useState<{ top: number; left: number } | null>(null);
+
 
     useLayoutEffect(() => {
-        if (showDatePicker && dateTriggerRef.current && datePickerRef.current) {
-            const rect = dateTriggerRef.current.getBoundingClientRect();
+        if (showDatePicker && !lockedPosition) {
+            // Use menu button as fallback when there's no due date
+            const triggerElement = dateTriggerRef.current || menuButtonRef.current;
+            if (!triggerElement) return;
 
-            const initialTop = rect.bottom + 8;
-            const initialLeft = rect.left;
+            const rect = triggerElement.getBoundingClientRect();
 
-            // Measure picker width AFTER render
-            const width = datePickerRef.current.getBoundingClientRect().width;
-
-            // Apply collision protection
+            let left = rect.left;
+            const width = 256; // w-64 = 16rem = 256px
             const padding = 8;
-            let left: number;
 
-            if (initialLeft + width > window.innerWidth) {
-                left = window.innerWidth - width - padding;
-            } else if (initialLeft < padding) {
-                left = padding;
+            // Mobile or Touch devices (iOS/Android)
+            const isMobile = window.innerWidth < 768 || window.matchMedia('(hover: none)').matches;
+
+            if (isMobile) {
+                // Center on mobile
+                left = (window.innerWidth - width) / 2;
             } else {
-                left = initialLeft;
+                // Desktop behavior: stick to trigger but keep within bounds
+                if (left + width > window.innerWidth) {
+                    left = window.innerWidth - width - padding;
+                }
+                if (left < padding) {
+                    left = padding;
+                }
             }
 
-            setDatePickerPos({ top: initialTop, left });
+            setLockedPosition({
+                top: rect.bottom + 8,
+                left,
+            });
         }
-    }, [showDatePicker]);
+
+
+        // Clear locked position when picker closes
+        if (!showDatePicker) {
+            setLockedPosition(null);
+        }
+    }, [showDatePicker, lockedPosition]);
 
     const isSelected = selectedTaskId === taskId;
     const isEditing = editingTaskId === taskId;
@@ -465,10 +481,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         {/* Action Buttons */}
                         <div className={clsx(
                             "flex items-center gap-2 ml-auto",
-                            isSelected ? "opacity-100" : "opacity-0 md:group-hover/item:opacity-100"
+                            isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 md:group-hover/item:opacity-100 pointer-events-none md:group-hover/item:pointer-events-auto"
                         )}>
                             <div className="relative">
                                 <button
+                                    ref={menuButtonRef}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setMenuOpen(!menuOpen);
@@ -481,7 +498,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
                                 {menuOpen && (
                                     <div
-                                        className="absolute right-0 mt-1 w-48 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg z-50 py-1"
+                                        className="absolute right-0 mt-1 w-48 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg z-50 py-1 pointer-events-auto"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <button
@@ -498,9 +515,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         </button>
 
                                         <button
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 setMenuOpen(false);
-                                                setShowDatePicker(true);
+                                                setTimeout(() => {
+                                                    setShowDatePicker(true);
+                                                }, 0);
                                             }}
                                             className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
                                         >
@@ -641,9 +661,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     ref={datePickerRef}
                     className="fixed w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
                     style={{
-                        top: datePickerPos?.top ?? 0,
-                        left: datePickerPos?.left ?? 0,
-                        visibility: datePickerPos ? 'visible' : 'hidden',
+                        position: 'fixed',
+                        top: lockedPosition?.top ?? 0,
+                        left: lockedPosition?.left ?? 0,
+                        visibility: lockedPosition ? 'visible' : 'hidden',
                         zIndex: 9999
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
@@ -662,12 +683,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         <label className="text-[10px] text-gray-500 dark:text-gray-400 font-medium block mb-1 px-1">
                             Time (optional)
                         </label>
-                        <input
-                            type="time"
-                            value={task.dueTime || ''}
-                            onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
-                            className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
+                        <div className="relative">
+                            <input
+                                type="time"
+                                value={task.dueTime || ''}
+                                onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
+                                className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none min-h-[26px]"
+                                style={{
+                                    WebkitAppearance: 'none'
+                                }}
+                            />
+                            <Clock
+                                size={12}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+                            />
+                        </div>
                     </div>
                 </div>,
                 document.body
