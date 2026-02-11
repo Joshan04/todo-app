@@ -136,6 +136,7 @@ export const useTaskStore = create<TaskState>()(
                             [id]: {
                                 ...task,
                                 completed: isCompleting,
+                                completedAt: isCompleting ? Date.now() : undefined,
                                 // Auto-collapse when completing a parent task
                                 expanded: isCompleting && hasSubtasks ? false : task.expanded
                             },
@@ -151,7 +152,8 @@ export const useTaskStore = create<TaskState>()(
                     if (updatedTask) {
                         firebaseService.updateTask(user.uid, id, {
                             completed: updatedTask.completed,
-                            expanded: updatedTask.expanded
+                            expanded: updatedTask.expanded,
+                            completedAt: updatedTask.completedAt
                         }).catch(e => console.error(e));
                     }
                 }

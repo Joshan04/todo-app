@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
+import { isToday, isYesterday } from 'date-fns';
 import { useTaskStore } from '../store/useTaskStore';
 import { useTheme } from '../hooks/useTheme';
-import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon, Menu } from 'lucide-react';
+import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon, Menu, Calendar } from 'lucide-react';
 import clsx from 'clsx';
 import { TaskItem } from './TaskItem';
 
@@ -358,30 +359,96 @@ export const MainContent: React.FC<MainContentProps> = ({ onOpenMobileMenu }) =>
 
                 {/* Task List */}
                 <div className="px-8 max-w-4xl mx-auto w-full pt-4">
+                    {/* Growth Tier: Daily Momentum & Greeting */}
+                    {activeView === 'today' && filteredTaskIds.length > 0 && (
+                        <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                {(() => {
+                                    const hour = new Date().getHours();
+                                    if (hour < 5) return "Quiet hours.";
+                                    if (hour < 12) return "Good morning.";
+                                    if (hour < 18) return "Good afternoon.";
+                                    return "Good evening.";
+                                })()}
+                                <span className="opacity-50 font-normal text-lg ml-1">
+                                    {Object.values(tasks).filter(t => t.completed && t.completedAt && isToday(t.completedAt)).length > 0
+                                        ? `You've completed ${Object.values(tasks).filter(t => t.completed && t.completedAt && isToday(t.completedAt)).length} tasks today.`
+                                        : "Ready to pick things up?" /* Reduce Guilt */}
+                                </span>
+                            </h2>
+                        </div>
+                    )}
+
+                    {/* Growth Tier: Celebration when Today is Clear */}
+                    {activeView === 'today' && filteredTaskIds.length === 0 && Object.values(tasks).filter(t => t.dueDate && isToday(t.dueDate) && !t.completed).length === 0 && Object.values(tasks).filter(t => t.dueDate && isToday(t.dueDate) && t.completed).length > 0 && (
+                        <div className="flex flex-col items-center justify-center text-center mt-10 mb-20 animate-in fade-in zoom-in-95 duration-700">
+                            <div className="w-16 h-16 bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 rounded-full flex items-center justify-center mb-4 ring-1 ring-yellow-500/10 shadow-sm">
+                                <span className="text-2xl">✨</span>
+                            </div>
+                            <h3 className="text-gray-900 dark:text-gray-100 font-medium text-lg mb-1">All done for today</h3>
+                            <p className="text-gray-500 dark:text-gray-400 mb-6">Enjoy your evening.</p>
+                            <button
+                                onClick={() => setActiveView('upcoming')}
+                                className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            >
+                                Want to plan tomorrow? &rarr;
+                            </button>
+                        </div>
+                    )}
+
+
                     <ul className="space-y-1 pb-20 list-none">
                         {filteredTaskIds.length === 0 ? (
-                            <div className="text-gray-400 text-center mt-20 dark:text-gray-500">
-                                {Object.keys(tasks).length === 0 ? (
-                                    <>
-                                        <p className="text-sm">No tasks yet.</p>
-                                        <p className="text-xs mt-1">Press Enter or click "Add a task".</p>
-                                    </>
-                                ) : (
-                                    (!activeListId && !activeTagId && (activeView === 'today' || activeView === 'upcoming')) ? (
+                            (!activeListId && !activeTagId && activeView === 'today' && Object.values(tasks).filter(t => t.dueDate && isToday(t.dueDate) && t.completed).length > 0) ? (
+                                // Handled above by celebration
+                                null
+                            ) : (
+                                <div className="flex flex-col items-center justify-center text-center mt-20 select-none">
+                                    {Object.keys(tasks).length === 0 ? (
                                         <>
-                                            <p className="text-sm">No tasks with due dates here yet.</p>
-                                            <p className="text-xs mt-1">Add a due date to see tasks in this view.</p>
+                                            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-black/5 dark:ring-white/5">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                            </div>
+                                            <h3 className="text-gray-900 dark:text-gray-100 font-medium mb-1">Start small</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Write one thing you want to get done.</p>
                                         </>
-                                    ) : activeView === 'completed' ? (
-                                        <p className="text-sm">No completed tasks yet.</p>
                                     ) : (
-                                        <>
-                                            <p className="text-sm">No tasks match the current filters.</p>
-                                            <p className="text-xs mt-1">Try switching lists, tags, or views.</p>
-                                        </>
-                                    )
-                                )}
-                            </div>
+                                        (!activeListId && !activeTagId && (activeView === 'today')) ? (
+                                            <>
+                                                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-black/5 dark:ring-white/5">
+                                                    <Sun size={20} className="text-gray-400" />
+                                                </div>
+                                                <h3 className="text-gray-900 dark:text-gray-100 font-medium mb-1">No tasks due today</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Add a due date to focus on today.</p>
+                                            </>
+                                        ) : activeView === 'upcoming' ? (
+                                            <>
+                                                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-black/5 dark:ring-white/5">
+                                                    <Calendar size={20} className="text-gray-400" />
+                                                </div>
+                                                <h3 className="text-gray-900 dark:text-gray-100 font-medium mb-1">No upcoming tasks</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">You're clear for the future.</p>
+                                            </>
+                                        ) : activeView === 'completed' ? (
+                                            <>
+                                                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-black/5 dark:ring-white/5 ring-inset">
+                                                    <Check size={20} className="text-gray-400" />
+                                                </div>
+                                                <h3 className="text-gray-900 dark:text-gray-100 font-medium mb-1">No completed tasks yet</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Finish tasks to build your history.</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-black/5 dark:ring-white/5">
+                                                    <Filter size={20} className="text-gray-400" />
+                                                </div>
+                                                <h3 className="text-gray-900 dark:text-gray-100 font-medium mb-1">No tasks found</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Try adjusting your filters.</p>
+                                            </>
+                                        )
+                                    )}
+                                </div>
+                            )
                         ) : (
                             filteredTaskIds.map(rootId => (
                                 <TaskItem key={rootId} taskId={rootId} />

@@ -69,7 +69,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({ taskId, isVisible }) =
 
             {showMenu && (
                 <div
-                    className="absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg p-1 w-48 z-20 dark:bg-gray-800 dark:border-gray-700"
+                    className="absolute top-full left-0 mt-1 bg-white border rounded-md shadow-xl ring-1 ring-black/5 p-1 w-48 z-20 dark:bg-gray-800 dark:border-gray-700 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-150 origin-top-left"
                     role="menu"
                     onClick={(e) => e.stopPropagation()}
                 >

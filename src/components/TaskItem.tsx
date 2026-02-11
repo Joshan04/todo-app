@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from "react-dom";
-import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List, X, Clock } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check, Calendar, AlignLeft, Plus, Trash2, MoreVertical, Hash, List, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { useTaskStore } from '../store/useTaskStore';
 import { DatePicker } from './DatePicker';
@@ -326,23 +326,28 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                 data-task-item="true"
                 onClick={handleRowClick}
                 className={clsx(
-                    "flex items-start py-1 px-4 -mx-4 rounded-md hover:bg-gray-100 group-hover/item:bg-gray-100 transition-colors dark:hover:bg-gray-800 dark:group-hover/item:bg-gray-800",
-                    isFocused && "ring-2 ring-blue-500 ring-opacity-50",
-                    isSelected && "bg-gray-100 dark:bg-gray-800" // Highlight on mobile selection
+                    "flex items-start py-2 px-3 -mx-3 rounded-lg transition-all duration-200 ease-out",
+                    // Phase 3 & 4: bg-transparent default, subtle hover, stronger select
+                    "hover:bg-black/[0.025] dark:hover:bg-white/[0.035]",
+                    "group-hover/item:bg-black/[0.01] dark:group-hover/item:bg-white/[0.01]",
+                    isFocused && "ring-2 ring-blue-500/50",
+                    isSelected && "bg-black/[0.05] dark:bg-white/[0.08]",
+                    // Phase 5: Focus Mode
+                    isEditing && "bg-white dark:bg-gray-800 shadow-lg scale-[1.01] z-10 ring-1 ring-black/5 dark:ring-white/5"
                 )}
-                style={{ paddingLeft: `${depth * 24 + 16}px` }}
+                style={{ paddingLeft: `${depth * 24 + 12}px` }}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 tabIndex={0}
             >
                 {/* Controls: Drag + Expand + Check */}
-                <div className="flex items-center gap-1 mt-0.5 relative -left-1">
+                <div className="flex items-center gap-1 mt-0.5 relative -left-0.5">
                     {/* Expand Toggle */}
                     <button
                         onClick={handleToggleExpand}
                         className={clsx(
-                            "p-0.5 rounded hover:bg-gray-200 text-gray-400 transition-colors w-5 h-5 flex items-center justify-center dark:hover:bg-gray-700",
-                            (!hasSubtasks) && "opacity-0 md:group-hover/item:opacity-100"
+                            "p-0.5 rounded-md hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-all duration-150 w-5 h-5 flex items-center justify-center dark:hover:bg-white/10 dark:hover:text-gray-300 active:scale-[0.97]",
+                            (!hasSubtasks) && "opacity-0 md:group-hover/item:opacity-100 scale-90"
                         )}
                         aria-label={hasSubtasks ? (task.expanded ? "Collapse subtasks" : "Expand subtasks") : "No subtasks"}
                         aria-expanded={hasSubtasks ? task.expanded : undefined}
@@ -355,19 +360,22 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     <button
                         onClick={(e) => { e.stopPropagation(); toggleTask(taskId); }}
                         className={clsx(
-                            "w-5 h-5 rounded border border-gray-300 flex items-center justify-center transition-colors ml-1 dark:border-gray-600",
-                            task.completed ? "bg-gray-900 border-gray-900 text-white dark:bg-white dark:border-white dark:text-black" : "hover:border-gray-400 bg-white dark:bg-gray-800 dark:hover:border-gray-500"
+                            "w-4.5 h-4.5 rounded-[5px] border flex items-center justify-center transition-all duration-300 ml-0.5 shadow-sm",
+                            "active:scale-90", // Satisfying press
+                            task.completed
+                                ? "bg-gray-800 border-gray-800 text-white dark:bg-gray-200 dark:border-gray-200 dark:text-black scale-105" // Checked state scale
+                                : "bg-white border-gray-300 hover:border-gray-400 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500"
                         )}
                         role="checkbox"
                         aria-checked={task.completed}
                         aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
                     >
-                        {task.completed && <Check size={12} strokeWidth={3} />}
+                        {task.completed && <Check size={10} strokeWidth={4} />}
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 ml-2 min-w-0">
+                <div className="flex-1 ml-2.5 min-w-0 pt-0.5">
                     <div className="flex items-center">
                         {isEditing ? (
                             <input
@@ -377,26 +385,20 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 onBlur={() => setEditingTask(null)}
                                 onKeyDown={handleKeyDown}
                                 onClick={(e) => e.stopPropagation()} // Prevent row click
-                                className="bg-transparent w-full outline-none border-b border-blue-500 pb-0.5 text-gray-900 dark:text-gray-100"
+                                className="bg-transparent w-full outline-none text-[15px] leading-snug font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
                             />
                         ) : (
                             <span
                                 id={`task-title-${taskId}`}
                                 onClick={(e) => {
-                                    e.stopPropagation(); // Handle edit click separately to avoid conflict? Or let it bubble?
-                                    // Original logic: click title -> edit.
-                                    // Row tap should toggle selection.
-                                    // Requirement: "Tap title -> Edit" (implied desktop behavior parity).
-                                    // Mobile: If title is tapped, maybe edit? Or reveal actions?
-                                    // User said: "Tap task row toggles active state".
-                                    // Actually, let's allow row click to handle selection. Title click is specific action.
-                                    // If title click triggers edit, it shouldn't toggle selection?
-                                    // Let's keep title edit logic but stop propagation so it doesn't trigger row selection toggle if desired.
+                                    e.stopPropagation();
                                     setEditingTask(taskId);
                                 }}
                                 className={clsx(
-                                    "task-title cursor-text select-none text-gray-900 dark:text-gray-100",
-                                    task.completed && "text-gray-400 line-through dark:text-gray-500"
+                                    "task-title cursor-text select-none text-[15px] leading-snug font-medium transition-all duration-200",
+                                    task.completed
+                                        ? "text-gray-400 line-through decoration-gray-300 dark:text-gray-500 dark:decoration-gray-600 opacity-60"
+                                        : "text-gray-900 dark:text-gray-100"
                                 )}
                             >
                                 {task.title}
@@ -408,20 +410,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     <div
                         onClick={(e) => e.stopPropagation()}
                         className={clsx(
-                            "flex items-center gap-3 mt-1 text-xs text-gray-400 h-5",
-                            // Combined Visibility Logic:
-                            // Always show if: 1. has metadata AND (desktop hover OR mobile selected)
-                            // If NO metadata: hidden unless (desktop hover OR mobile selected)
+                            "flex items-center gap-2 mt-1 text-[11px] font-medium text-gray-400 dark:text-gray-500 h-5",
                             (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !(task.notes ?? "") && !showDatePicker && !showNotes) &&
                             (isSelected ? "flex" : "hidden group-hover/item:flex")
                         )}>
                         {/* Subtask progress */}
                         {hasSubtasks && (
                             <span
-                                className=""
+                                className="text-[11px] text-gray-400 dark:text-gray-500"
                                 aria-label={`${(task.subtasks ?? []).filter(sid => tasks[sid]?.completed).length} of ${(task.subtasks ?? []).length} subtasks completed`}
                             >
-                                {task.subtasks.filter(sid => tasks[sid]?.completed).length}/{task.subtasks.length} subtasks
+                                {task.subtasks.filter(sid => tasks[sid]?.completed).length}/{task.subtasks.length}
                             </span>
                         )}
 
@@ -445,13 +444,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         setShowDatePicker(!showDatePicker);
                                     }}
                                     className={clsx(
-                                        "flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium",
+                                        "flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-all duration-150 active:scale-[0.97]",
                                         isPast(task.dueDate) && !isToday(task.dueDate)
-                                            ? "text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-200 dark:hover:bg-red-900/50"
-                                            : "text-orange-600 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-200 dark:hover:bg-orange-900/50"
+                                            ? "text-red-scale-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30"
+                                            : "text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
                                     )}
                                 >
-                                    <Calendar size={10} />
+                                    <Calendar size={10} strokeWidth={2.5} />
                                     <span>
                                         {formatDueDate(task.dueDate)}
                                         {task.dueTime && <span className="ml-1 opacity-75 text-[10px]">@{task.dueTime}</span>}
@@ -459,10 +458,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 </button>
                             </div>
                         ) : (
-                            // Only show DatePicker when active (triggered via menu)
                             <div ref={dateTriggerRef as any} className="w-0 h-0" />
                         )}
-                        {/* Notes Icon (Only if notes exist) */}
+
+                        {/* Notes Icon */}
                         {(task.notes ?? "") && (
                             <div className="relative">
                                 <button
@@ -470,18 +469,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         e.stopPropagation();
                                         setShowNotes(!showNotes);
                                     }}
-                                    className="flex items-center gap-1 rounded text-[11px] hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-gray-500 dark:text-gray-400"
+                                    className="flex items-center gap-1 p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 transition-all duration-150 active:scale-[0.97]"
                                     aria-label="Edit notes"
                                 >
-                                    <AlignLeft size={10} />
+                                    <AlignLeft size={12} />
                                 </button>
                             </div>
                         )}
 
                         {/* Action Buttons */}
                         <div className={clsx(
-                            "flex items-center gap-2 ml-auto",
-                            isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 md:group-hover/item:opacity-100 pointer-events-none md:group-hover/item:pointer-events-auto"
+                            "flex items-center gap-1 ml-auto",
+                            isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 md:group-hover/item:opacity-100 pointer-events-none md:group-hover/item:pointer-events-auto transition-opacity"
                         )}>
                             <div className="relative">
                                 <button
@@ -490,15 +489,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                         e.stopPropagation();
                                         setMenuOpen(!menuOpen);
                                     }}
-                                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    className={clsx(
+                                        "p-1.5 rounded-md text-gray-400 transition-all duration-150 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] active:scale-[0.97]",
+                                        menuOpen ? "bg-black/5 text-gray-600 dark:bg-white/10 dark:text-gray-200" : ""
+                                    )}
                                     aria-label="More actions"
                                 >
-                                    <MoreVertical size={16} />
+                                    <MoreVertical size={14} />
                                 </button>
 
                                 {menuOpen && (
                                     <div
-                                        className="absolute right-0 mt-1 w-48 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg z-50 py-1 pointer-events-auto"
+                                        className="absolute right-0 mt-1 w-48 rounded-xl border border-transparent bg-white/90 dark:bg-gray-900/90 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-xl z-50 py-1.5 pointer-events-auto animate-in fade-in zoom-in-95 duration-150 origin-top-right scale-100"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <button
@@ -508,9 +510,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                                 setExpanded(taskId, true);
                                                 if (newSubtaskId) setAutoEditTask(newSubtaskId);
                                             }}
-                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                            className="w-[calc(100%-8px)] mx-1 text-left px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]"
                                         >
-                                            <Plus size={14} className="opacity-70" />
+                                            <Plus size={14} className="opacity-50" />
                                             <span>Add subtask</span>
                                         </button>
 
@@ -522,10 +524,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                                     setShowDatePicker(true);
                                                 }, 0);
                                             }}
-                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                            className="w-[calc(100%-8px)] mx-1 text-left px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]"
                                         >
-                                            <Calendar size={14} className="opacity-70" />
-                                            <span>Add date</span>
+                                            <Calendar size={14} className="opacity-50" />
+                                            <span>Set due date</span>
                                         </button>
 
                                         <button
@@ -533,10 +535,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                                 setMenuOpen(false);
                                                 setShowNotes(true);
                                             }}
-                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                            className="w-[calc(100%-8px)] mx-1 text-left px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]"
                                         >
-                                            <AlignLeft size={14} className="opacity-70" />
-                                            <span>Add note</span>
+                                            <AlignLeft size={14} className="opacity-50" />
+                                            <span>Add details</span>
                                         </button>
 
                                         <button
@@ -545,9 +547,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                                 const el = document.getElementById(`list-selector-wrapper-${taskId}`);
                                                 el?.querySelector('button')?.click();
                                             }}
-                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                            className="w-[calc(100%-8px)] mx-1 text-left px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]"
                                         >
-                                            <List size={14} className="opacity-70" />
+                                            <List size={14} className="opacity-50" />
                                             <span>Move to list</span>
                                         </button>
 
@@ -557,20 +559,20 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                                 const el = document.getElementById(`tag-selector-wrapper-${taskId}`);
                                                 el?.querySelector('button')?.click();
                                             }}
-                                            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                                            className="w-[calc(100%-8px)] mx-1 text-left px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]"
                                         >
-                                            <Hash size={14} className="opacity-70" />
+                                            <Hash size={14} className="opacity-50" />
                                             <span>Tags</span>
                                         </button>
 
-                                        <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+                                        <div className="h-px bg-gray-100 dark:bg-white/5 my-1.5 mx-2" />
 
                                         <button
                                             onClick={() => {
                                                 setMenuOpen(false);
                                                 setConfirmOpen(true);
                                             }}
-                                            className="w-full text-left px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                            className="w-[calc(100%-8px)] mx-1 text-left px-3 py-2 text-sm font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]"
                                         >
                                             <Trash2 size={14} className="opacity-70" />
                                             <span>Delete</span>
@@ -583,7 +585,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
                     {/* Notes Field */}
                     {showNotes && (
-                        <div className="mt-1.5 ml-0.5">
+                        <div className="mt-2 ml-7">
                             <textarea
                                 ref={notesRef}
                                 value={noteDraft}
@@ -593,20 +595,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                     if (e.key === 'Escape') {
                                         e.stopPropagation();
                                         setShowNotes(false);
-                                        // Reset to original on cancel? Req says "collapses notes without saving"
                                         setNoteDraft(task.notes ?? '');
                                     }
-                                    // Allow Enter for newlines
                                 }}
                                 onBlur={() => {
                                     // Save and collapse
                                     updateTask(taskId, { notes: noteDraft.trim() || undefined });
                                     setShowNotes(false);
                                 }}
-                                placeholder="Type notes..."
-                                className="w-full bg-transparent text-xs text-gray-600 leading-relaxed resize-none outline-none border-none placeholder:text-gray-400 dark:text-gray-300 dark:placeholder:text-gray-600 block rounded"
+                                placeholder="Add notes..."
+                                className="w-full bg-transparent text-sm text-gray-600 leading-relaxed resize-none outline-none border-l-2 border-gray-200 pl-3 py-1 placeholder:text-gray-400 dark:text-gray-300 dark:border-gray-700 dark:placeholder:text-gray-600 block rounded-r"
                                 style={{
-                                    fieldSizing: "content", // Modern CSS for auto-grow
+                                    fieldSizing: "content",
                                     minHeight: "2lh"
                                 } as React.CSSProperties}
                                 rows={Math.max(2, noteDraft.split('\n').length)}
@@ -621,11 +621,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                 task.expanded && hasSubtasks && (
                     <div className="">
                         {(task.subtasks ?? []).map(childId => {
-                            // Apply search filtering to children
-                            // Use a selector/memoized approach would be better but direct access is fine for now
                             const searchQuery = useTaskStore.getState().searchQuery.toLowerCase();
                             if (searchQuery) {
-                                // Helper to check match
                                 const hasMatch = (tId: string): boolean => {
                                     const t = useTaskStore.getState().tasks[tId];
                                     if (!t) return false;
@@ -659,7 +656,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
             {showDatePicker && createPortal(
                 <div
                     ref={datePickerRef}
-                    className="fixed w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
+                    className="fixed w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl ring-1 ring-black/10 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
                     style={{
                         position: 'fixed',
                         top: lockedPosition?.top ?? 0,
@@ -688,14 +685,14 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                                 type="time"
                                 value={task.dueTime || ''}
                                 onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
-                                className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none min-h-[26px]"
+                                className="w-full text-xs font-medium bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none min-h-[32px]"
                                 style={{
                                     WebkitAppearance: 'none'
                                 }}
                             />
                             <Clock
-                                size={12}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+                                size={14}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
                             />
                         </div>
                     </div>

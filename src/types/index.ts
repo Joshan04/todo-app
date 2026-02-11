@@ -16,6 +16,7 @@ export interface Task {
     id: string;
     title: string;
     completed: boolean;
+    completedAt?: number; // timestamp
     expanded: boolean;
     dueDate?: number | null; // timestamp
     dueTime?: string;

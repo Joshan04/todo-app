@@ -87,47 +87,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
                     onClick={onClose}
                     aria-hidden="true"
                 />
             )}
 
             <aside className={clsx(
-                "w-64 bg-gray-50 border-r border-gray-200 h-[100dvh] flex flex-col dark:bg-gray-900 dark:border-gray-800",
-                "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:translate-x-0 md:static",
-                isMobileOpen ? "translate-x-0" : "-translate-x-full"
+                "w-64 bg-white/60 border-r border-gray-200/50 h-[100dvh] flex flex-col dark:bg-neutral-900/60 dark:border-white/5 backdrop-blur-xl supports-[backdrop-filter]:bg-opacity-80 transition-colors duration-300",
+                "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-out md:translate-x-0 md:static",
+                isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
             )}>
-                <div className="flex flex-col h-full bg-white dark:bg-gray-950">
+                <div className="flex flex-col h-full bg-transparent">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                <Layout className="text-white" size={20} />
+                    <div className="flex items-center justify-between px-4 py-3.5 mt-1">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                                <Layout className="text-white" size={16} strokeWidth={2.5} />
                             </div>
-                            <span className="font-semibold text-gray-900 dark:text-gray-100">Taskflow</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Taskflow</span>
                         </div>
                     </div>
 
                     {/* Search */}
-                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                        <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-md dark:bg-gray-900">
-                            <Search size={16} className="text-gray-400" />
+                    <div className="px-3 py-2">
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-black/[0.04] rounded-lg dark:bg-white/[0.06] ring-1 ring-transparent focus-within:ring-black/5 dark:focus-within:ring-white/10 transition-all duration-200">
+                            <Search size={14} className="text-gray-400" />
                             <input
                                 type="text"
                                 placeholder="Search"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-500 dark:text-gray-100 dark:placeholder:text-gray-500"
+                                className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-500 dark:text-gray-100 dark:placeholder:text-gray-500 font-medium"
                             />
                             <div className="flex items-center gap-1">
-                                <kbd className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">⌘ K</kbd>
+                                <kbd className="text-[10px] text-gray-400 bg-white/50 px-1.5 py-0.5 rounded border border-gray-200 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400 font-sans tracking-wide">⌘K</kbd>
                             </div>
                         </div>
                     </div>
 
                     {/* Scrollable Navigation Content */}
-                    <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-6 min-h-0">
+                    <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-6 min-h-0 scrollbar-hide">
                         {/* Main Views */}
                         <div className="space-y-0.5">
                             {navItems.map((item) => (
@@ -135,26 +135,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                                     key={item.id}
                                     onClick={() => handleNavigation(() => setActiveView(item.id))}
                                     className={clsx(
-                                        "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+                                        "w-full flex items-center gap-2.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 group relative active:scale-[0.98]",
                                         activeView === item.id && activeListId === null && activeTagId === null
-                                            ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
-                                            : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                            ? "bg-black/[0.07] text-gray-900 dark:bg-white/[0.1] dark:text-gray-100"
+                                            : "text-gray-600 hover:bg-black/[0.04] dark:text-gray-400 dark:hover:bg-white/[0.06]"
                                     )}
                                 >
-                                    {item.icon}
+                                    <span className={clsx(
+                                        "shrink-0 transition-colors",
+                                        activeView === item.id && activeListId === null && activeTagId === null
+                                            ? "text-gray-900 dark:text-gray-100"
+                                            : "text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300"
+                                    )}>
+                                        {item.icon}
+                                    </span>
                                     <span className="flex-1 text-left">{item.label}</span>
-                                    <span className="text-xs text-gray-400">{getCount(item.id)}</span>
+                                    {getCount(item.id) > 0 && (
+                                        <span className="text-xs text-gray-400 font-medium">{getCount(item.id)}</span>
+                                    )}
                                 </button>
                             ))}
                         </div>
 
                         {/* Lists/Projects */}
-                        <div className="pt-4">
-                            <div className="flex items-center justify-between px-3 mb-1 text-xs font-semibold text-gray-400">
-                                <span>LISTS</span>
+                        <div className="pt-2">
+                            <div className="flex items-center justify-between px-3 mb-1.5 group">
+                                <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Lists</span>
                                 <Plus
-                                    size={14}
-                                    className="cursor-pointer hover:text-gray-600"
+                                    size={12}
+                                    strokeWidth={3}
+                                    className="cursor-pointer text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
                                     onClick={() => {
                                         const name = prompt('Enter new list name:');
                                         if (name && name.trim()) {
@@ -169,27 +179,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                                         key={list.id}
                                         onClick={() => handleNavigation(() => setActiveList(list.id))}
                                         className={clsx(
-                                            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+                                            "w-full flex items-center gap-2.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 active:scale-[0.98]",
                                             activeListId === list.id
-                                                ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
-                                                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                                ? "bg-black/[0.07] text-gray-900 dark:bg-white/[0.1] dark:text-gray-100"
+                                                : "text-gray-600 hover:bg-black/[0.04] dark:text-gray-400 dark:hover:bg-white/[0.06]"
                                         )}
                                         aria-current={activeListId === list.id ? 'page' : undefined}
                                     >
-                                        <span>{list.icon}</span>
-                                        <span>{list.name}</span>
+                                        <span className="text-lg leading-none">{list.icon}</span>
+                                        <span className="truncate">{list.name}</span>
                                     </button>
                                 ))}
+                                {lists.length === 0 && (
+                                    <p className="px-3 py-1 text-xs text-gray-400 italic">No lists yet</p>
+                                )}
                             </div>
                         </div>
 
                         {/* Tags */}
                         <div>
-                            <div className="flex items-center justify-between px-3 mb-1 text-xs font-semibold text-gray-400">
-                                <span>TAGS</span>
+                            <div className="flex items-center justify-between px-3 mb-1.5 group">
+                                <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tags</span>
                                 <Plus
-                                    size={14}
-                                    className="cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                                    size={12}
+                                    strokeWidth={3}
+                                    className="cursor-pointer text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
                                     onClick={() => {
                                         const name = prompt('Enter new tag name:');
                                         if (name && name.trim()) {
@@ -204,15 +218,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                                         key={tag.id}
                                         onClick={() => handleNavigation(() => setActiveTag(tag.id))}
                                         className={clsx(
-                                            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+                                            "w-full flex items-center gap-2.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 active:scale-[0.98]",
                                             activeTagId === tag.id
-                                                ? "bg-gray-200 text-gray-900 font-medium dark:bg-gray-800 dark:text-gray-100"
-                                                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                                ? "bg-black/[0.07] text-gray-900 dark:bg-white/[0.1] dark:text-gray-100"
+                                                : "text-gray-600 hover:bg-black/[0.04] dark:text-gray-400 dark:hover:bg-white/[0.06]"
                                         )}
                                         aria-current={activeTagId === tag.id ? 'page' : undefined}
                                     >
-                                        <Hash size={16} />
-                                        <span>{tag.name}</span>
+                                        <Hash size={14} className={clsx("shrink-0", activeTagId === tag.id ? "text-gray-600 dark:text-gray-400" : "text-gray-400")} />
+                                        <span className="truncate">{tag.name}</span>
                                     </button>
                                 ))}
                             </div>
@@ -220,40 +234,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                     </nav>
 
                     {/* Settings & Auth Button - Fixed at Bottom */}
-                    <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 space-y-2">
+                    <div className="p-3 border-t border-gray-100 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 space-y-1 backdrop-blur-md">
                         {user ? (
-                            <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-md text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
-                                <div className="flex items-center gap-2 overflow-hidden">
+                            <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors group cursor-pointer active:scale-[0.98]">
+                                <div className="flex items-center gap-2.5 overflow-hidden">
                                     {user.photoURL ? (
-                                        <img src={user.photoURL} alt="User" className="w-6 h-6 rounded-full" />
+                                        <img src={user.photoURL} alt="User" className="w-5 h-5 rounded-full ring-1 ring-black/10 dark:ring-white/10" />
                                     ) : (
-                                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
+                                        <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold ring-1 ring-black/5">
                                             {user.email?.charAt(0).toUpperCase()}
                                         </div>
                                     )}
-                                    <span className="truncate max-w-[100px]">{user.displayName || user.email?.split('@')[0]}</span>
+                                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[100px]">{user.displayName || user.email?.split('@')[0]}</span>
                                 </div>
                                 <button
-                                    onClick={() => logout()}
-                                    className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        logout();
+                                    }}
+                                    className="text-[10px] font-medium text-gray-400 group-hover:text-red-500 hover:underline opacity-0 group-hover:opacity-100 transition-all"
                                 >
-                                    Logout
+                                    Sign out
                                 </button>
                             </div>
                         ) : (
                             <button
                                 onClick={() => setShowAuthModal(true)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"
+                                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/10 dark:hover:bg-blue-900/20 transition-all font-medium border border-blue-100 dark:border-blue-900/20 active:scale-[0.98]"
                             >
-                                <LogIn size={18} />
+                                <LogIn size={14} />
                                 <span>Sign In</span>
                             </button>
                         )}
                         <button
                             onClick={() => setShowSettings(true)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-lg text-gray-600 font-medium hover:bg-black/[0.04] dark:text-gray-400 dark:hover:bg-white/[0.06] transition-all active:scale-[0.98]"
                         >
-                            <Settings size={18} />
+                            <Settings size={14} />
                             <span>Settings</span>
                         </button>
                     </div>
@@ -262,34 +279,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                 {/* Settings Modal */}
                 {showSettings && (
                     <div
-                        className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
                         onClick={() => setShowSettings(false)}
                     >
                         <div
-                            className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden dark:bg-gray-900 dark:border dark:border-gray-800"
+                            className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden dark:bg-gray-900 dark:border dark:border-gray-800 ring-1 ring-black/5 animate-in zoom-in-95 duration-200"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-                                <h2 className="font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
+                                <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Settings</h2>
                                 <button
                                     onClick={() => setShowSettings(false)}
-                                    className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors dark:hover:text-gray-300 dark:hover:bg-gray-800"
+                                    className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors dark:hover:text-gray-300 dark:hover:bg-gray-800"
                                 >
-                                    <X size={20} />
+                                    <X size={16} />
                                 </button>
                             </div>
                             <div className="p-4">
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Theme</label>
-                                    <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
+                                <div className="mb-6">
+                                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Appearance</label>
+                                    <div className="grid grid-cols-2 gap-2 p-1 bg-black/[0.04] rounded-lg dark:bg-white/[0.06] border-0">
                                         {(['light', 'dark'] as const).map((t) => (
                                             <button
                                                 key={t}
                                                 onClick={() => setTheme(t)}
                                                 className={clsx(
-                                                    "px-3 py-1.5 text-sm rounded-md capitalize transition-all",
+                                                    "px-3 py-1.5 text-xs font-medium rounded-md capitalize transition-all",
                                                     theme === t
-                                                        ? "bg-white text-gray-900 shadow-sm font-medium dark:bg-gray-700 dark:text-gray-100"
+                                                        ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100 ring-1 ring-black/5"
                                                         : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                                                 )}
                                             >
@@ -299,7 +316,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                                     </div>
                                 </div>
                                 <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-800">
-                                    <p className="text-xs text-gray-400">Taskflow v1.0.0</p>
+                                    <p className="text-[10px] uppercase tracking-widest text-gray-300 dark:text-gray-700 font-semibold">Taskflow v1.0.0</p>
                                 </div>
                             </div>
                         </div>

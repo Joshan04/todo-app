@@ -63,7 +63,7 @@ export const ListSelector: React.FC<ListSelectorProps> = ({ taskId, isVisible })
 
             {showMenu && (
                 <div
-                    className="absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg py-1 w-32 z-20 dark:bg-gray-800 dark:border-gray-700"
+                    className="absolute top-full left-0 mt-1 bg-white border rounded-md shadow-xl ring-1 ring-black/5 py-1 w-32 z-20 dark:bg-gray-800 dark:border-gray-700 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-150 origin-top-left"
                     role="menu"
                 >
                     {lists.map(list => (
