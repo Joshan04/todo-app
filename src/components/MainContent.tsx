@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { isToday, isYesterday } from 'date-fns';
+import { isToday } from 'date-fns';
 import { useTaskStore } from '../store/useTaskStore';
 import { useTheme } from '../hooks/useTheme';
 import { Filter, SlidersHorizontal, MoreHorizontal, Plus, Check, Sun, Moon, Menu, Calendar } from 'lucide-react';
