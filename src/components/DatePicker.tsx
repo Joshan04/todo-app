@@ -74,13 +74,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({ currentDate, onSelect, o
     return (
         <div
             ref={containerRef}
-            className="absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg py-2 w-48 z-20"
+            className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-2 w-48 z-20"
             role="dialog"
             aria-label="Due date picker"
         >
             {/* Exact Date Input */}
             <div className="px-3 py-2">
-                <label htmlFor="date-input" className="text-xs text-gray-500 font-medium block mb-1">
+                <label htmlFor="date-input" className="text-xs text-gray-500 dark:text-gray-400 font-medium block mb-1">
                     Pick a date
                 </label>
                 <input
@@ -88,36 +88,36 @@ export const DatePicker: React.FC<DatePickerProps> = ({ currentDate, onSelect, o
                     type="date"
                     value={formatDateForInput(currentDate)}
                     onChange={handleDateInputChange}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 dark:placeholder-gray-500"
                     aria-label="Select exact date"
                 />
             </div>
 
-            <div className="h-px bg-gray-200 my-1" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
             {/* Quick Actions */}
             <button
                 onClick={() => handleSelect('today')}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 role="menuitem"
             >
-                <Calendar size={14} className="text-gray-500" />
+                <Calendar size={14} className="text-gray-500 dark:text-gray-400" />
                 Today
             </button>
             <button
                 onClick={() => handleSelect('tomorrow')}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 role="menuitem"
             >
-                <Calendar size={14} className="text-gray-500" />
+                <Calendar size={14} className="text-gray-500 dark:text-gray-400" />
                 Tomorrow
             </button>
             <button
                 onClick={() => handleSelect('nextWeek')}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 role="menuitem"
             >
-                <Calendar size={14} className="text-gray-500" />
+                <Calendar size={14} className="text-gray-500 dark:text-gray-400" />
                 Next week
             </button>
             {currentDate && (
@@ -125,7 +125,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ currentDate, onSelect, o
                     <div className="h-px bg-gray-200 my-1" />
                     <button
                         onClick={() => handleSelect('clear')}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600"
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400"
                         role="menuitem"
                     >
                         <X size={14} />

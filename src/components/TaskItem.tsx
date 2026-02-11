@@ -68,24 +68,27 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
 
     useLayoutEffect(() => {
         if (showDatePicker && dateTriggerRef.current && datePickerRef.current) {
-            const triggerRect = dateTriggerRef.current.getBoundingClientRect();
-            const pickerRect = datePickerRef.current.getBoundingClientRect();
+            const rect = dateTriggerRef.current.getBoundingClientRect();
 
-            let left = triggerRect.left;
-            let top = triggerRect.bottom + 6;
+            const initialTop = rect.bottom + 8;
+            const initialLeft = rect.left;
 
+            // Measure picker width AFTER render
+            const width = datePickerRef.current.getBoundingClientRect().width;
+
+            // Apply collision protection
             const padding = 8;
-            const width = pickerRect.width;
+            let left: number;
 
-            if (left + width > window.innerWidth - padding) {
+            if (initialLeft + width > window.innerWidth) {
                 left = window.innerWidth - width - padding;
-            }
-
-            if (left < padding) {
+            } else if (initialLeft < padding) {
                 left = padding;
+            } else {
+                left = initialLeft;
             }
 
-            setDatePickerPos({ top, left });
+            setDatePickerPos({ top: initialTop, left });
         }
     }, [showDatePicker]);
 
@@ -656,14 +659,14 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         />
                     </div>
                     <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800/50">
-                        <label className="text-[10px] text-gray-500 font-medium block mb-1 px-1">
+                        <label className="text-[10px] text-gray-500 dark:text-gray-400 font-medium block mb-1 px-1">
                             Time (optional)
                         </label>
                         <input
                             type="time"
                             value={task.dueTime || ''}
                             onChange={(e) => updateTask(taskId, { dueTime: e.target.value })}
-                            className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                     </div>
                 </div>,
