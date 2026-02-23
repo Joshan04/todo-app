@@ -347,7 +347,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         onClick={handleToggleExpand}
                         className={clsx(
                             "p-0.5 rounded-md hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-all duration-150 w-5 h-5 flex items-center justify-center dark:hover:bg-white/10 dark:hover:text-gray-300 active:scale-[0.97]",
-                            (!hasSubtasks) && "opacity-0 md:group-hover/item:opacity-100 scale-90"
+                            (!hasSubtasks) && "opacity-0 pointer-events-none"
                         )}
                         aria-label={hasSubtasks ? (task.expanded ? "Collapse subtasks" : "Expand subtasks") : "No subtasks"}
                         aria-expanded={hasSubtasks ? task.expanded : undefined}
@@ -409,11 +409,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                     {/* Metadata Row (Tags, Due Date, Subtask count) */}
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className={clsx(
-                            "flex items-center gap-2 mt-1 text-[11px] font-medium text-gray-400 dark:text-gray-500 h-5",
-                            (task.tags.length === 0 && !task.dueDate && !hasSubtasks && !(task.notes ?? "") && !showDatePicker && !showNotes) &&
-                            (isSelected ? "flex" : "hidden group-hover/item:flex")
-                        )}>
+                        className="flex items-center gap-2 mt-1 text-[11px] font-medium text-gray-400 dark:text-gray-500 h-5"
+                    >
                         {/* Subtask progress */}
                         {hasSubtasks && (
                             <span
@@ -478,10 +475,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ taskId, depth = 0 }) => {
                         )}
 
                         {/* Action Buttons */}
-                        <div className={clsx(
-                            "flex items-center gap-1 ml-auto",
-                            isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 md:group-hover/item:opacity-100 pointer-events-none md:group-hover/item:pointer-events-auto transition-opacity"
-                        )}>
+                        <div className="flex items-center gap-1 ml-auto opacity-100 text-zinc-500 dark:text-zinc-300 hover:text-zinc-700 dark:hover:text-white transition-colors">
                             <div className="relative">
                                 <button
                                     ref={menuButtonRef}

@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                                 <Plus
                                     size={12}
                                     strokeWidth={3}
-                                    className="cursor-pointer text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
+                                    className="cursor-pointer text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-100 flex items-center justify-center transition-opacity active:scale-90"
                                     onClick={() => {
                                         const name = prompt('Enter new list name:');
                                         if (name && name.trim()) {
@@ -203,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onClose }) => {
                                 <Plus
                                     size={12}
                                     strokeWidth={3}
-                                    className="cursor-pointer text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
+                                    className="cursor-pointer text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-100 flex items-center justify-center transition-opacity active:scale-90"
                                     onClick={() => {
                                         const name = prompt('Enter new tag name:');
                                         if (name && name.trim()) {
